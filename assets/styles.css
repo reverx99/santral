@@ -536,6 +536,177 @@ main { position: relative; z-index: 1; }
   to   { transform: translate3d(-50%,0,0); }
 }
 
+/* ============== reel — phonk edit showcase ============== */
+
+.reel {
+  --frames: 6;
+  --frame-vh: 90vh;
+  position: relative;
+  height: calc(var(--frames) * var(--frame-vh) + 100vh);
+  margin-top: 40px;
+}
+
+.reel-progress {
+  position: sticky;
+  top: 0;
+  height: 2px;
+  z-index: 5;
+  background: rgba(255,255,255,0.04);
+  margin-top: 0;
+}
+.reel-progress > span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--pink), var(--cyan), var(--purple));
+  box-shadow: 0 0 12px var(--pink);
+  transition: width 0.15s linear;
+}
+
+.reel-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.reel-frame {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 24px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(60px) scale(1.18);
+  filter: blur(8px);
+  transition:
+    opacity .55s ease,
+    transform .9s cubic-bezier(.16,.84,.24,1),
+    filter .9s ease;
+}
+.reel-frame.active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+  pointer-events: auto;
+}
+.reel-frame.leaving {
+  opacity: 0;
+  transform: translateY(-50px) scale(0.95);
+  filter: blur(12px);
+}
+
+.reel-glyph {
+  display: block;
+  font-family: var(--f-display);
+  font-size: clamp(80px, 14vw, 200px);
+  line-height: 0.8;
+  color: var(--c);
+  text-shadow:
+    0 0 24px var(--c),
+    0 0 60px color-mix(in srgb, var(--c) 60%, transparent);
+  margin-bottom: 16px;
+  animation: glyph-throb 1.6s ease-in-out infinite;
+}
+@keyframes glyph-throb {
+  0%, 100% { transform: scale(1) rotate(0); }
+  50%      { transform: scale(1.06) rotate(2deg); }
+}
+
+.reel-kicker {
+  display: inline-block;
+  font-family: var(--f-mono);
+  font-size: clamp(11px, 1.4vw, 14px);
+  letter-spacing: 0.36em;
+  color: var(--fg-dim);
+  border: 1px solid var(--line-2);
+  padding: 6px 12px;
+  margin-bottom: 18px;
+  text-transform: uppercase;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+}
+.reel-frame.active .reel-kicker {
+  color: var(--c);
+  border-color: color-mix(in srgb, var(--c) 60%, transparent);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--c) 60%, transparent);
+}
+
+.reel-title {
+  font-family: var(--f-display);
+  font-size: clamp(72px, 16vw, 240px);
+  line-height: 0.85;
+  letter-spacing: 0.03em;
+  margin: 0;
+  background: linear-gradient(180deg, #fff 0%, #ffe6f5 40%, var(--c) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 28px color-mix(in srgb, var(--c) 50%, transparent));
+}
+
+.reel-sub {
+  margin-top: 22px;
+  max-width: 60ch;
+  font-family: var(--f-mono);
+  font-size: clamp(13px, 1.6vw, 18px);
+  letter-spacing: 0.18em;
+  color: var(--fg-dim);
+  text-transform: lowercase;
+}
+.reel-frame.active .reel-sub {
+  color: var(--fg);
+}
+
+/* corner brackets, very phonk */
+.reel-stage::before,
+.reel-stage::after {
+  content: "";
+  position: absolute;
+  width: 60px; height: 60px;
+  border: 2px solid var(--pink);
+  pointer-events: none;
+  opacity: 0.6;
+  filter: drop-shadow(0 0 8px var(--pink));
+}
+.reel-stage::before {
+  top: 28px; left: 28px;
+  border-right: none; border-bottom: none;
+}
+.reel-stage::after {
+  bottom: 28px; right: 28px;
+  border-left: none; border-top: none;
+  border-color: var(--cyan);
+  filter: drop-shadow(0 0 8px var(--cyan));
+}
+
+/* big "FRAME 0X / 06" indicator */
+.reel-stage .reel-counter {
+  position: absolute;
+  bottom: 28px; left: 28px;
+  font-family: var(--f-mono);
+  font-size: 11px; letter-spacing: 0.36em;
+  color: var(--fg-muted);
+}
+.reel-stage .reel-hint {
+  position: absolute;
+  top: 28px; right: 28px;
+  font-family: var(--f-mono);
+  font-size: 11px; letter-spacing: 0.36em;
+  color: var(--fg-muted);
+}
+
+@media (max-width: 600px) {
+  .reel { --frame-vh: 80vh; }
+  .reel-stage::before, .reel-stage::after { width: 36px; height: 36px; top: 16px; left: 16px; }
+  .reel-stage::after { top: auto; left: auto; bottom: 16px; right: 16px; }
+}
+
 /* ============== features ============== */
 
 .features {

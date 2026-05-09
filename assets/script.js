@@ -291,6 +291,70 @@
   setTimeout(loop, 4000);
 })();
 
+/* ============== reel — phonk edit showcase ============== */
+(() => {
+  const reel = document.querySelector(".reel");
+  if (!reel) return;
+  const stage = reel.querySelector(".reel-stage");
+  const frames = Array.from(reel.querySelectorAll(".reel-frame"));
+  const progress = reel.querySelector(".reel-progress > span");
+  if (!stage || frames.length === 0) return;
+
+  // inject counter + hint
+  const counter = document.createElement("div");
+  counter.className = "reel-counter";
+  counter.textContent = `// frame 01 / ${String(frames.length).padStart(2,"0")}`;
+  stage.appendChild(counter);
+
+  const hint = document.createElement("div");
+  hint.className = "reel-hint";
+  hint.textContent = "↓ scroll to advance";
+  stage.appendChild(hint);
+
+  let last = -1;
+  let raf = 0;
+  const update = () => {
+    raf = 0;
+    const r = reel.getBoundingClientRect();
+    const total = reel.offsetHeight - window.innerHeight;
+    const scrolled = Math.max(0, Math.min(total, -r.top));
+    const p = total > 0 ? scrolled / total : 0;
+    if (progress) progress.style.width = `${(p * 100).toFixed(2)}%`;
+
+    const idx = Math.min(frames.length - 1, Math.floor(p * frames.length));
+    if (idx !== last) {
+      frames.forEach((f, i) => {
+        f.classList.remove("active", "leaving");
+        if (i === idx) f.classList.add("active");
+        else if (i < idx) f.classList.add("leaving");
+      });
+      counter.textContent =
+        `// frame ${String(idx + 1).padStart(2, "0")} / ${String(frames.length).padStart(2, "0")}`;
+
+      // tiny screen-shake on slam-in (only when entering forward)
+      if (idx > last) {
+        stage.animate(
+          [
+            { transform: "translate(0,0)" },
+            { transform: "translate(-3px, 2px)" },
+            { transform: "translate(2px, -1px)" },
+            { transform: "translate(0,0)" },
+          ],
+          { duration: 160, easing: "steps(4)" }
+        );
+      }
+      last = idx;
+    }
+  };
+
+  const onScroll = () => {
+    if (!raf) raf = requestAnimationFrame(update);
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll);
+  update();
+})();
+
 /* ============== laser sound-cue (visual tick) ============== */
 (() => {
   // sync small flickers across the page when the laser passes
