@@ -5,6 +5,7 @@ import { renderSistem }      from "./pages/sistem.js";
 import { renderDonanim }     from "./pages/donanim.js";
 import { renderUygulamalar } from "./pages/uygulamalar.js";
 import { renderTarama }      from "./pages/tarama.js";
+import { renderPaketler }    from "./pages/paketler.js";
 import { renderHakkinda }    from "./pages/hakkinda.js";
 
 const ROUTES = {
@@ -12,6 +13,7 @@ const ROUTES = {
   donanim:     { label: "DONANIM",     render: renderDonanim,     num: "// 02" },
   uygulamalar: { label: "UYGULAMALAR", render: renderUygulamalar, num: "// 03" },
   tarama:      { label: "TARAMA",      render: renderTarama,      num: "// 04" },
+  paketler:    { label: "PAKETLER",    render: renderPaketler,    num: "// 05" },
   hakkinda:    { label: "HAKKINDA",    render: renderHakkinda,    num: "// 99" },
 };
 

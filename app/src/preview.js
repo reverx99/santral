@@ -5,6 +5,7 @@ import { renderSistem }      from "./pages/sistem.js";
 import { renderDonanim }     from "./pages/donanim.js";
 import { renderUygulamalar } from "./pages/uygulamalar.js";
 import { renderTarama }      from "./pages/tarama.js";
+import { renderPaketler }    from "./pages/paketler.js";
 import { renderHakkinda }    from "./pages/hakkinda.js";
 
 let CATALOG_CACHE = null;
@@ -46,6 +47,50 @@ async function loadScanners() {
 }
 
 const MOCK = {
+  package_overview: () => ({
+    native: {
+      kind: "apt",
+      installed: true,
+      version: "apt 2.7.14 (amd64)",
+      installed_count: 2147,
+      repo_config_path: "/etc/apt/sources.list.d/",
+    },
+    flatpak: {
+      installed: true,
+      version: "Flatpak 1.14.6",
+      remotes: [
+        { name: "flathub", url: "https://dl.flathub.org/repo/" },
+        { name: "flathub-beta", url: "https://dl.flathub.org/beta-repo/" },
+        { name: "fedora", url: "oci+https://registry.fedoraproject.org" },
+      ],
+      installed_count: 12,
+      has_flathub: true,
+    },
+    snap: {
+      installed: false,
+      service_active: false,
+      version: null,
+      installed_count: null,
+    },
+    recommendations: [
+      {
+        id: "flatpak-ok",
+        severity: "good",
+        title: "Flatpak hazır",
+        body: "Flathub bağlı. Şu an 12 uygulama kurulu.",
+        action_label: null,
+        action_command: null,
+      },
+      {
+        id: "snap-optional",
+        severity: "info",
+        title: "Snap kurulu değil (opsiyonel)",
+        body: "Snap, Canonical'ın paket biçimi. Linux üzerinde Flatpak'e göre daha az popüler ama bazı uygulamalar (Spotify, Postman) burada bulunur.",
+        action_label: "Snap'i kur (opsiyonel)",
+        action_command: "apt install -y snapd",
+      },
+    ],
+  }),
   app_info: () => ({
     name: "Santral",
     version: "0.0.1",
@@ -149,6 +194,7 @@ const ROUTES = {
   donanim:     { label: "DONANIM",     render: renderDonanim },
   uygulamalar: { label: "UYGULAMALAR", render: renderUygulamalar },
   tarama:      { label: "TARAMA",      render: renderTarama },
+  paketler:    { label: "PAKETLER",    render: renderPaketler },
   hakkinda:    { label: "HAKKINDA",    render: renderHakkinda },
 };
 
