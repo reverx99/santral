@@ -4,12 +4,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { renderSistem }      from "./pages/sistem.js";
 import { renderDonanim }     from "./pages/donanim.js";
 import { renderUygulamalar } from "./pages/uygulamalar.js";
+import { renderTarama }      from "./pages/tarama.js";
 import { renderHakkinda }    from "./pages/hakkinda.js";
 
 const ROUTES = {
   sistem:      { label: "SİSTEM",      render: renderSistem,      num: "// 01" },
   donanim:     { label: "DONANIM",     render: renderDonanim,     num: "// 02" },
   uygulamalar: { label: "UYGULAMALAR", render: renderUygulamalar, num: "// 03" },
+  tarama:      { label: "TARAMA",      render: renderTarama,      num: "// 04" },
   hakkinda:    { label: "HAKKINDA",    render: renderHakkinda,    num: "// 99" },
 };
 

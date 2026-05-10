@@ -4,6 +4,7 @@
 import { renderSistem }      from "./pages/sistem.js";
 import { renderDonanim }     from "./pages/donanim.js";
 import { renderUygulamalar } from "./pages/uygulamalar.js";
+import { renderTarama }      from "./pages/tarama.js";
 import { renderHakkinda }    from "./pages/hakkinda.js";
 
 let CATALOG_CACHE = null;
@@ -20,6 +21,28 @@ async function loadCatalog() {
     preferred_source: "apt",
   };
   return CATALOG_CACHE;
+}
+
+let SCAN_CACHE = null;
+async function loadScanners() {
+  if (SCAN_CACHE) return SCAN_CACHE;
+  const r = await fetch("/data/scanners.json");
+  const raw = await r.json();
+  // mock: rastgele kurulu durumlar
+  const installedSet = new Set(["chkrootkit", "lynis", "rpm-verify"]);
+  SCAN_CACHE = {
+    version: raw.version,
+    updated: raw.updated,
+    categories: raw.categories,
+    scanners: raw.scanners.map((s) => ({
+      ...s,
+      installed: installedSet.has(s.id),
+      installable: Object.keys(s.sources || {}).length > 0,
+    })),
+    detected_sources: ["apt", "flatpak"],
+    preferred_source: "apt",
+  };
+  return SCAN_CACHE;
 }
 
 const MOCK = {
@@ -114,12 +137,10 @@ const MOCK = {
 };
 
 const invoke = async (cmd) => {
-  if (cmd === "app_catalog") {
-    await new Promise((r) => setTimeout(r, 60));
-    return await loadCatalog();
-  }
-  if (!MOCK[cmd]) throw new Error("unknown command: " + cmd);
   await new Promise((r) => setTimeout(r, 60));
+  if (cmd === "app_catalog")  return await loadCatalog();
+  if (cmd === "scan_catalog") return await loadScanners();
+  if (!MOCK[cmd]) throw new Error("unknown command: " + cmd);
   return MOCK[cmd]();
 };
 
@@ -127,6 +148,7 @@ const ROUTES = {
   sistem:      { label: "SİSTEM",      render: renderSistem },
   donanim:     { label: "DONANIM",     render: renderDonanim },
   uygulamalar: { label: "UYGULAMALAR", render: renderUygulamalar },
+  tarama:      { label: "TARAMA",      render: renderTarama },
   hakkinda:    { label: "HAKKINDA",    render: renderHakkinda },
 };
 

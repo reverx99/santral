@@ -1,0 +1,139 @@
+{
+  "$schema": "https://santral.org/schemas/scanners-v1.json",
+  "version": 1,
+  "updated": "2026-05-10",
+  "categories": [
+    { "id": "rootkit",   "label": "ROOTKIT",        "color": "#ff0099", "glyph": "†" },
+    { "id": "antivirus", "label": "ANTİVİRÜS",      "color": "#00f0ff", "glyph": "▮" },
+    { "id": "audit",     "label": "DENETİM",        "color": "#b400ff", "glyph": "✱" },
+    { "id": "integrity", "label": "BÜTÜNLÜK",       "color": "#ffd400", "glyph": "✚" }
+  ],
+  "scanners": [
+    {
+      "id": "chkrootkit",
+      "name": "chkrootkit",
+      "category": "rootkit",
+      "description": "Bilinen rootkit imzalarını yerel disk üzerinde hızlıca tarar. Klasik, hafif, off-line.",
+      "homepage": "https://www.chkrootkit.org",
+      "speed": "hızlı",
+      "needs_root": true,
+      "scan_command": ["chkrootkit"],
+      "estimated_secs": 30,
+      "tags": ["klasik", "imza", "off-line"],
+      "sources": {
+        "apt": "chkrootkit", "dnf": "chkrootkit",
+        "pacman": "chkrootkit", "zypper": "chkrootkit"
+      }
+    },
+    {
+      "id": "rkhunter",
+      "name": "Rootkit Hunter",
+      "category": "rootkit",
+      "description": "rkhunter — derin rootkit ve gizlenmiş süreç taraması. Sistem dosyası karşılaştırması, MD5 doğrulaması, suspicious string detection.",
+      "homepage": "http://rkhunter.sourceforge.net",
+      "speed": "orta",
+      "needs_root": true,
+      "scan_command": ["rkhunter", "--check", "--skip-keypress"],
+      "estimated_secs": 180,
+      "tags": ["derin", "md5", "kapsamlı"],
+      "sources": {
+        "apt": "rkhunter", "dnf": "rkhunter",
+        "pacman": "rkhunter", "zypper": "rkhunter"
+      }
+    },
+    {
+      "id": "clamav",
+      "name": "ClamAV",
+      "category": "antivirus",
+      "description": "Açık kaynak antivirüs motoru. Sürekli güncellenen imza veritabanı; e-posta ve dosya sistemi taraması.",
+      "homepage": "https://www.clamav.net",
+      "speed": "yavaş",
+      "needs_root": false,
+      "scan_command": ["clamscan", "-r", "--bell", "-i"],
+      "estimated_secs": 600,
+      "tags": ["antivirus", "imza-güncel", "endüstri"],
+      "sources": {
+        "apt": "clamav", "dnf": "clamav",
+        "pacman": "clamav", "zypper": "clamav",
+        "flatpak": "io.github.clamav.clamav-gui"
+      }
+    },
+    {
+      "id": "maldet",
+      "name": "Linux Malware Detect",
+      "category": "antivirus",
+      "description": "maldet — paylaşımlı barındırma ortamlarında oluşan tehditlere odaklı, ClamAV motoruyla entegre çalışabilen tarayıcı.",
+      "homepage": "https://www.rfxn.com/projects/linux-malware-detect/",
+      "speed": "orta",
+      "needs_root": true,
+      "scan_command": ["maldet", "-a", "/"],
+      "estimated_secs": 480,
+      "tags": ["malware", "shared-host", "clamav-uyumlu"],
+      "sources": {}
+    },
+    {
+      "id": "lynis",
+      "name": "Lynis",
+      "category": "audit",
+      "description": "Sistem sertleştirme denetimi. SSH, dosya izinleri, kernel parametreleri, açık portlar, paket bütünlüğü — A'dan Z'ye rapor.",
+      "homepage": "https://cisofy.com/lynis/",
+      "speed": "orta",
+      "needs_root": true,
+      "scan_command": ["lynis", "audit", "system", "--quick"],
+      "estimated_secs": 240,
+      "tags": ["hardening", "compliance", "rapor"],
+      "sources": {
+        "apt": "lynis", "dnf": "lynis",
+        "pacman": "lynis", "zypper": "lynis"
+      }
+    },
+    {
+      "id": "aide",
+      "name": "AIDE",
+      "category": "integrity",
+      "description": "Advanced Intrusion Detection Environment — kritik dosyaların hash'lerini saklar, sonradan değişiklikleri tespit eder.",
+      "homepage": "https://aide.github.io",
+      "speed": "yavaş",
+      "needs_root": true,
+      "scan_command": ["aide", "--check"],
+      "estimated_secs": 360,
+      "tags": ["dosya-bütünlüğü", "hash", "host-ids"],
+      "sources": {
+        "apt": "aide", "dnf": "aide",
+        "pacman": "aide", "zypper": "aide"
+      }
+    },
+    {
+      "id": "debsums",
+      "name": "debsums",
+      "category": "integrity",
+      "description": "Debian paketlerinin md5sum dosyalarını kontrol eder; bozulmuş veya değiştirilmiş ikilileri bulur. (Sadece Debian/Ubuntu ailesi.)",
+      "homepage": "https://manpages.debian.org/debsums",
+      "speed": "hızlı",
+      "needs_root": true,
+      "scan_command": ["debsums", "-c"],
+      "estimated_secs": 60,
+      "tags": ["paket-bütünlüğü", "debian-ailesi"],
+      "sources": {
+        "apt": "debsums"
+      }
+    },
+    {
+      "id": "rpm-verify",
+      "name": "rpm --verify",
+      "category": "integrity",
+      "description": "RPM ailesinde her kurulu paketi mod, izin, hash ve sahip açısından doğrular. (Fedora/RHEL/openSUSE.)",
+      "homepage": "https://rpm-software-management.github.io",
+      "speed": "orta",
+      "needs_root": true,
+      "scan_command": ["rpm", "-Va"],
+      "estimated_secs": 90,
+      "tags": ["paket-bütünlüğü", "rpm-ailesi", "yerleşik"],
+      "sources": {
+        "dnf": "rpm",
+        "zypper": "rpm"
+      },
+      "always_available_on": ["dnf", "zypper"]
+    }
+  ]
+}

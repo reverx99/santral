@@ -6,6 +6,7 @@
 mod catalog;
 mod distro;
 mod hardware;
+mod scanner;
 mod system;
 
 use serde::Serialize;
@@ -50,6 +51,11 @@ fn app_catalog() -> catalog::Catalog {
     catalog::collect()
 }
 
+#[tauri::command]
+fn scan_catalog() -> scanner::ScanCatalog {
+    scanner::collect()
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -59,6 +65,7 @@ pub fn run() {
             system_info,
             hardware_info,
             app_catalog,
+            scan_catalog,
         ])
         .run(tauri::generate_context!())
         .expect("santral: tauri runtime failed");

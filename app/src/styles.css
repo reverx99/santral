@@ -1,6 +1,6 @@
 /* SANTRAL — desktop UI · phonk / neon control panel */
 
-@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=VT323&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=VT323&family=Inter:wght@400;500;600&display=swap");
 
 :root {
   --bg: #050507;
@@ -22,6 +22,8 @@
   --f-display: "Bebas Neue", "Anton", system-ui, sans-serif;
   --f-mono: "Share Tech Mono", ui-monospace, "JetBrains Mono", monospace;
   --f-term: "VT323", "Share Tech Mono", monospace;
+  /* okuma için: kısa açıklamalar / yardım metinleri */
+  --f-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -118,13 +120,13 @@ button { font: inherit; cursor: pointer; }
 }
 .nav-item {
   display: flex; align-items: center; gap: 12px;
-  padding: 10px 14px;
+  padding: 11px 14px;
   background: transparent;
   border: 1px solid transparent;
-  color: var(--fg-dim);
+  color: var(--fg);
   font-family: var(--f-mono);
-  font-size: 12px;
-  letter-spacing: 0.18em;
+  font-size: 13px;
+  letter-spacing: 0.12em;
   text-align: left;
   transition: all .18s ease;
   border-left: 2px solid transparent;
@@ -210,13 +212,13 @@ button { font: inherit; cursor: pointer; }
 }
 .page-head h1 {
   font-family: var(--f-display);
-  font-size: 56px;
+  font-size: 52px;
   margin: 0;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   line-height: 1;
-  background: linear-gradient(90deg, #fff, var(--pink) 70%, var(--purple));
+  background: linear-gradient(90deg, #ffffff 0%, #ffffff 40%, var(--pink) 90%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 0 18px rgba(255,0,153,0.18));
+  filter: drop-shadow(0 0 14px rgba(255,0,153,0.22));
 }
 .page-num {
   font-family: var(--f-mono);
@@ -279,9 +281,10 @@ button { font: inherit; cursor: pointer; }
   color: #fff;
 }
 .card-sub {
-  font-family: var(--f-mono);
+  font-family: var(--f-body);
   font-size: 13px;
-  color: var(--fg-dim);
+  line-height: 1.55;
+  color: #b8b8c4;
   margin-top: 6px;
   word-break: break-word;
 }
@@ -442,9 +445,10 @@ button { font: inherit; cursor: pointer; }
 }
 .hint-body {
   flex: 1;
-  font-size: 13px;
-  color: var(--fg-dim);
-  line-height: 1.5;
+  font-family: var(--f-body);
+  font-size: 14px;
+  color: #d0d0dc;
+  line-height: 1.55;
 }
 .hint-body strong {
   color: var(--c, var(--yellow));
@@ -597,19 +601,20 @@ button { font: inherit; cursor: pointer; }
 
 .app-name {
   font-family: var(--f-display);
-  font-size: 24px;
-  letter-spacing: 0.04em;
-  margin: 0 0 6px;
+  font-size: 28px;
+  letter-spacing: 0.02em;
+  margin: 0 0 8px;
   line-height: 1;
   color: #fff;
 }
 .app-desc {
-  font-family: var(--f-mono);
-  font-size: 12px;
-  line-height: 1.55;
-  color: var(--fg-dim);
-  margin: 0 0 10px;
-  min-height: 2.6em;
+  font-family: var(--f-body);
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: #c8c8d4;
+  margin: 0 0 12px;
+  min-height: 2.8em;
 }
 
 .app-tags {
@@ -702,6 +707,168 @@ button { font: inherit; cursor: pointer; }
   font-size: 80px;
   margin-bottom: 16px;
   opacity: 0.4;
+}
+
+/* ============== tarama (scan catalog) ============== */
+
+.scan-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px solid var(--line-2);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--pink) 6%, transparent), transparent 60%),
+    rgba(10, 10, 16, 0.6);
+  margin-bottom: 18px;
+}
+.scan-summary-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.scan-count {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  line-height: 1;
+}
+.scan-count-num {
+  font-family: var(--f-display);
+  font-size: 36px;
+  color: var(--pink);
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 14px rgba(255, 0, 153, 0.4);
+}
+.scan-count-lab {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: var(--fg-dim);
+  text-transform: uppercase;
+}
+.scan-meta-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-family: var(--f-body);
+  font-size: 13px;
+  color: #c8c8d4;
+}
+.scan-meta-row strong {
+  color: var(--cyan);
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+  font-weight: 500;
+}
+.scan-start {
+  font-size: 12px;
+  letter-spacing: 0.28em;
+  padding: 12px 22px;
+}
+
+.scan-toolbar {
+  margin-bottom: 18px;
+}
+
+.scan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 14px;
+}
+
+.scan-card {
+  /* extends .app-card */
+}
+.scan-meta {
+  display: flex;
+  gap: 4px;
+}
+.scan-srcs {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+.scan-status-pill .chip { font-size: 10px; }
+
+.chip.speed-fast { color: var(--green); border-color: color-mix(in srgb, var(--green) 60%, transparent); }
+.chip.speed-mid  { color: var(--cyan);  border-color: color-mix(in srgb, var(--cyan) 60%, transparent); }
+.chip.speed-slow { color: var(--yellow); border-color: color-mix(in srgb, var(--yellow) 60%, transparent); }
+
+/* özel checkbox — pembe neon onay */
+.scan-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--fg-dim);
+  cursor: pointer;
+  padding: 7px 12px;
+  border: 1px solid var(--line-2);
+  background: rgba(0, 0, 0, 0.3);
+  transition: all 0.15s ease;
+}
+.scan-toggle-wrap:hover {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+.scan-toggle-wrap input { display: none; }
+.scan-toggle-box {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--fg-muted);
+  display: inline-block;
+  position: relative;
+  transition: all 0.15s ease;
+}
+.scan-toggle-wrap input:checked ~ .scan-toggle-box {
+  border-color: var(--pink);
+  background: var(--pink);
+  box-shadow: 0 0 10px var(--pink);
+}
+.scan-toggle-wrap input:checked ~ .scan-toggle-box::after {
+  content: "";
+  position: absolute;
+  left: 3px; top: -1px;
+  width: 4px; height: 9px;
+  border: solid #000;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.scan-toggle-wrap:has(input:checked) {
+  border-color: var(--pink);
+  color: var(--pink);
+  background: color-mix(in srgb, var(--pink) 8%, transparent);
+}
+
+.scan-status {
+  margin-top: 24px;
+  border: 1px solid var(--pink);
+  padding: 14px 16px;
+  background: rgba(10, 10, 16, 0.7);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--pink) 16%, transparent);
+}
+.scan-status-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: var(--pink);
+  text-transform: uppercase;
+}
+.scan-status-target {
+  margin-top: 8px;
+  font-family: var(--f-term);
+  font-size: 14px;
+  color: var(--cyan);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @media (prefers-reduced-motion: reduce) {
