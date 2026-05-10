@@ -311,6 +311,8 @@
   hint.textContent = "↓ scroll to advance";
   stage.appendChild(hint);
 
+  const slash = stage.querySelector(".slash-wipe");
+
   let last = -1;
   let raf = 0;
   const update = () => {
@@ -331,18 +333,18 @@
       counter.textContent =
         `// frame ${String(idx + 1).padStart(2, "0")} / ${String(frames.length).padStart(2, "0")}`;
 
-      // tiny screen-shake on slam-in (only when entering forward)
-      if (idx > last) {
-        stage.animate(
-          [
-            { transform: "translate(0,0)" },
-            { transform: "translate(-3px, 2px)" },
-            { transform: "translate(2px, -1px)" },
-            { transform: "translate(0,0)" },
-          ],
-          { duration: 160, easing: "steps(4)" }
-        );
+      // anime slam: combined zoom-punch + screen-shake
+      stage.classList.remove("slam");
+      void stage.offsetWidth;
+      stage.classList.add("slam");
+
+      // diagonal slash wipe between frames
+      if (slash) {
+        slash.classList.remove("go");
+        void slash.offsetWidth;
+        slash.classList.add("go");
       }
+
       last = idx;
     }
   };
