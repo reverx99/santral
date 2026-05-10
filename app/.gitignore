@@ -1,0 +1,11 @@
+# node
+node_modules/
+dist/
+.vite/
+*.log
+
+# rust / tauri
+src-tauri/target/
+src-tauri/gen/
+src-tauri/.cargo/
+src-tauri/Cargo.lock.bak

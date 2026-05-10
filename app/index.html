@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Santral</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div class="scanlines" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="noise" aria-hidden="true"></div>
+
+    <div id="app" class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">▮</span>
+          <span class="brand-text">SANTRAL</span>
+          <span class="brand-tag" id="brand-tag">v0.0.1</span>
+        </div>
+        <nav class="nav">
+          <button class="nav-item" data-route="sistem">
+            <span class="nav-glyph">▤</span><span>SİSTEM</span>
+          </button>
+          <button class="nav-item" data-route="donanim">
+            <span class="nav-glyph">⚙</span><span>DONANIM</span>
+          </button>
+          <button class="nav-item is-disabled" disabled title="yakında">
+            <span class="nav-glyph">▮</span><span>TARAMA</span>
+          </button>
+          <button class="nav-item is-disabled" disabled title="yakında">
+            <span class="nav-glyph">⊞</span><span>PAKETLER</span>
+          </button>
+          <button class="nav-item is-disabled" disabled title="yakında">
+            <span class="nav-glyph">▥</span><span>UYGULAMALAR</span>
+          </button>
+          <button class="nav-item is-disabled" disabled title="yakında">
+            <span class="nav-glyph">⚡</span><span>OPTİMİZASYON</span>
+          </button>
+          <button class="nav-item is-disabled" disabled title="yakında">
+            <span class="nav-glyph">≡</span><span>REPOLAR</span>
+          </button>
+          <button class="nav-item" data-route="hakkinda">
+            <span class="nav-glyph">∞</span><span>HAKKINDA</span>
+          </button>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="status-line">
+            <span class="dot dot-cyan"></span>
+            <span id="status-text">başlatılıyor…</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="page" id="page">
+        <div class="loading">
+          <span class="loader"></span>
+          <span>SANTRAL yükleniyor…</span>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
