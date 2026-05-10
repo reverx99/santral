@@ -1,12 +1,14 @@
 // preview entry — Tauri olmadan tarayıcıda mock veriyle render etmek için.
 // Sadece UI'yi göstermeye yarar; sürüme hiçbir etkisi yoktur.
 
-import { renderSistem }      from "./pages/sistem.js";
-import { renderDonanim }     from "./pages/donanim.js";
-import { renderUygulamalar } from "./pages/uygulamalar.js";
-import { renderTarama }      from "./pages/tarama.js";
-import { renderPaketler }    from "./pages/paketler.js";
-import { renderHakkinda }    from "./pages/hakkinda.js";
+import { renderSistem }       from "./pages/sistem.js";
+import { renderDonanim }      from "./pages/donanim.js";
+import { renderUygulamalar }  from "./pages/uygulamalar.js";
+import { renderTarama }       from "./pages/tarama.js";
+import { renderPaketler }     from "./pages/paketler.js";
+import { renderOptimizasyon } from "./pages/optimizasyon.js";
+import { renderRepolar }      from "./pages/repolar.js";
+import { renderHakkinda }     from "./pages/hakkinda.js";
 
 let CATALOG_CACHE = null;
 async function loadCatalog() {
@@ -47,6 +49,75 @@ async function loadScanners() {
 }
 
 const MOCK = {
+  optimization_scan: () => ({
+    native_kind: "apt",
+    total_bytes: 1.8 * 1024 ** 3,
+    categories: [
+      {
+        id: "native-cache", label: "APT paket önbelleği",
+        description: "İndirilmiş paket arşivleri (/var/cache/apt/archives). Yeniden indirilebilirler, silmek güvenli.",
+        size_bytes: 642 * 1024 ** 2, item_count: null,
+        command: "apt-get clean", safety: "safe", status: "found",
+        icon: "▰", color: "#ff0099",
+      },
+      {
+        id: "journal", label: "Sistem günlükleri",
+        description: "systemd-journald'in tuttuğu kayıt geçmişi. 7 günden eskisini silmek güvenli.",
+        size_bytes: 384 * 1024 ** 2, item_count: null,
+        command: "journalctl --vacuum-time=7d", safety: "safe", status: "found",
+        icon: "▤", color: "#00f0ff",
+      },
+      {
+        id: "user-cache", label: "Kullanıcı önbelleği",
+        description: "~/.cache altındaki uygulama önbellekleri (tarayıcılar, miniatür önbellekleri, vb.). Silmek genelde güvenli ama uygulama açıkken kapatmak iyi olur.",
+        size_bytes: 712 * 1024 ** 2, item_count: null,
+        command: "rm -rf ~/.cache/*", safety: "review", status: "found",
+        icon: "✱", color: "#b400ff",
+      },
+      {
+        id: "thumbnails", label: "Önizleme küçük resimleri",
+        description: "Dosya yöneticisinin oluşturduğu thumbnail önbelleği. Sadece görsel; silmek güvenli, gerektikçe yeniden üretilir.",
+        size_bytes: 64 * 1024 ** 2, item_count: null,
+        command: "rm -rf ~/.cache/thumbnails", safety: "safe", status: "found",
+        icon: "▥", color: "#ffd400",
+      },
+      {
+        id: "tmp", label: "Geçici dosyalar",
+        description: "/tmp altındaki geçici dosyalar. Çoğu uygulama her açılışta kendi tmp'sini yönetir; manuel silinmemeli.",
+        size_bytes: 28 * 1024 ** 2, item_count: null,
+        command: "# /tmp'i el ile temizleme önerilmez — sistem yeniden başladığında zaten temizlenir.",
+        safety: "manual", status: "found", icon: "▭", color: "#5a5a6a",
+      },
+      {
+        id: "autoremove", label: "Yetim paketler",
+        description: "Bağımlılık olarak kurulup artık hiçbir paketin gerek duymadığı paketler. Kaldırmak güvenlidir.",
+        size_bytes: 0, item_count: 14,
+        command: "apt-get autoremove --purge -y", safety: "review", status: "found",
+        icon: "✕", color: "#ff4477",
+      },
+      {
+        id: "flatpak-unused", label: "Kullanılmayan Flatpak runtime'ları",
+        description: "Hiçbir Flatpak uygulaması tarafından kullanılmayan ortak çalışma zamanları.",
+        size_bytes: 0, item_count: 2,
+        command: "flatpak uninstall --unused -y", safety: "safe", status: "found",
+        icon: "◐", color: "#00f0ff",
+      },
+    ],
+  }),
+  repo_list: () => ({
+    native_kind: "apt",
+    native: [
+      { kind: "apt", id: "deb::http://archive.ubuntu.com/ubuntu::noble", name: "deb noble (main restricted universe multiverse)", url: "http://archive.ubuntu.com/ubuntu", enabled: true, source_path: "/etc/apt/sources.list", gpg_check: null, official: false },
+      { kind: "apt", id: "deb::http://security.ubuntu.com/ubuntu::noble-security", name: "deb noble-security (main restricted)", url: "http://security.ubuntu.com/ubuntu", enabled: true, source_path: "/etc/apt/sources.list", gpg_check: null, official: false },
+      { kind: "apt", id: "deb::https://download.docker.com/linux/ubuntu::noble", name: "deb noble (stable)", url: "https://download.docker.com/linux/ubuntu", enabled: true, source_path: "/etc/apt/sources.list.d/docker.list", gpg_check: null, official: false },
+      { kind: "apt", id: "deb::http://ppa.launchpad.net/git-core/ppa/ubuntu::noble", name: "deb noble (main)", url: "http://ppa.launchpad.net/git-core/ppa/ubuntu", enabled: false, source_path: "/etc/apt/sources.list.d/git-core.list", gpg_check: null, official: false },
+    ],
+    flatpak: [
+      { kind: "flatpak", id: "flathub", name: "flathub", url: "https://dl.flathub.org/repo/", enabled: true, source_path: "flatpak remotes", gpg_check: null, official: true },
+      { kind: "flatpak", id: "flathub-beta", name: "flathub-beta", url: "https://dl.flathub.org/beta-repo/", enabled: true, source_path: "flatpak remotes", gpg_check: null, official: false },
+      { kind: "flatpak", id: "fedora", name: "fedora", url: "oci+https://registry.fedoraproject.org", enabled: false, source_path: "flatpak remotes", gpg_check: null, official: false },
+    ],
+  }),
   package_overview: () => ({
     native: {
       kind: "apt",
@@ -190,12 +261,14 @@ const invoke = async (cmd) => {
 };
 
 const ROUTES = {
-  sistem:      { label: "SİSTEM",      render: renderSistem },
-  donanim:     { label: "DONANIM",     render: renderDonanim },
-  uygulamalar: { label: "UYGULAMALAR", render: renderUygulamalar },
-  tarama:      { label: "TARAMA",      render: renderTarama },
-  paketler:    { label: "PAKETLER",    render: renderPaketler },
-  hakkinda:    { label: "HAKKINDA",    render: renderHakkinda },
+  sistem:       { label: "SİSTEM",       render: renderSistem },
+  donanim:      { label: "DONANIM",      render: renderDonanim },
+  uygulamalar:  { label: "UYGULAMALAR",  render: renderUygulamalar },
+  tarama:       { label: "TARAMA",       render: renderTarama },
+  paketler:     { label: "PAKETLER",     render: renderPaketler },
+  optimizasyon: { label: "OPTİMİZASYON", render: renderOptimizasyon },
+  repolar:      { label: "REPOLAR",      render: renderRepolar },
+  hakkinda:     { label: "HAKKINDA",     render: renderHakkinda },
 };
 
 const $page    = document.getElementById("page");

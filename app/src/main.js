@@ -1,20 +1,24 @@
 // santral — frontend bootstrap. Tauri komutlarını çağırır, sayfaları render eder.
 
 import { invoke } from "@tauri-apps/api/core";
-import { renderSistem }      from "./pages/sistem.js";
-import { renderDonanim }     from "./pages/donanim.js";
-import { renderUygulamalar } from "./pages/uygulamalar.js";
-import { renderTarama }      from "./pages/tarama.js";
-import { renderPaketler }    from "./pages/paketler.js";
-import { renderHakkinda }    from "./pages/hakkinda.js";
+import { renderSistem }       from "./pages/sistem.js";
+import { renderDonanim }      from "./pages/donanim.js";
+import { renderUygulamalar }  from "./pages/uygulamalar.js";
+import { renderTarama }       from "./pages/tarama.js";
+import { renderPaketler }     from "./pages/paketler.js";
+import { renderOptimizasyon } from "./pages/optimizasyon.js";
+import { renderRepolar }      from "./pages/repolar.js";
+import { renderHakkinda }     from "./pages/hakkinda.js";
 
 const ROUTES = {
-  sistem:      { label: "SİSTEM",      render: renderSistem,      num: "// 01" },
-  donanim:     { label: "DONANIM",     render: renderDonanim,     num: "// 02" },
-  uygulamalar: { label: "UYGULAMALAR", render: renderUygulamalar, num: "// 03" },
-  tarama:      { label: "TARAMA",      render: renderTarama,      num: "// 04" },
-  paketler:    { label: "PAKETLER",    render: renderPaketler,    num: "// 05" },
-  hakkinda:    { label: "HAKKINDA",    render: renderHakkinda,    num: "// 99" },
+  sistem:       { label: "SİSTEM",       render: renderSistem,       num: "// 01" },
+  donanim:      { label: "DONANIM",      render: renderDonanim,      num: "// 02" },
+  uygulamalar:  { label: "UYGULAMALAR",  render: renderUygulamalar,  num: "// 03" },
+  tarama:       { label: "TARAMA",       render: renderTarama,       num: "// 04" },
+  paketler:     { label: "PAKETLER",     render: renderPaketler,     num: "// 05" },
+  optimizasyon: { label: "OPTİMİZASYON", render: renderOptimizasyon, num: "// 06" },
+  repolar:      { label: "REPOLAR",      render: renderRepolar,      num: "// 07" },
+  hakkinda:     { label: "HAKKINDA",     render: renderHakkinda,     num: "// 99" },
 };
 
 const DEFAULT_ROUTE = "sistem";

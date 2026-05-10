@@ -6,7 +6,9 @@
 mod catalog;
 mod distro;
 mod hardware;
+mod optimization;
 mod packages;
+mod repos;
 mod scanner;
 mod system;
 
@@ -62,6 +64,16 @@ fn package_overview() -> packages::PackageOverview {
     packages::collect()
 }
 
+#[tauri::command]
+fn optimization_scan() -> optimization::OptimizationReport {
+    optimization::collect()
+}
+
+#[tauri::command]
+fn repo_list() -> repos::RepoList {
+    repos::collect()
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -73,6 +85,8 @@ pub fn run() {
             app_catalog,
             scan_catalog,
             package_overview,
+            optimization_scan,
+            repo_list,
         ])
         .run(tauri::generate_context!())
         .expect("santral: tauri runtime failed");
