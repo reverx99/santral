@@ -291,82 +291,45 @@
   setTimeout(loop, 4000);
 })();
 
-/* ============== reel — phonk edit showcase ============== */
+/* ============== reel — phonk edit showcase (scroll-snap + IO) ============== */
 (() => {
   const reel = document.querySelector(".reel");
   if (!reel) return;
-  const stage = reel.querySelector(".reel-stage");
   const frames = Array.from(reel.querySelectorAll(".reel-frame"));
-  const progress = reel.querySelector(".reel-progress > span");
-  if (!stage || frames.length === 0) return;
-
-  // inject counter + hint
-  const counter = document.createElement("div");
-  counter.className = "reel-counter";
-  counter.textContent = `// frame 01 / ${String(frames.length).padStart(2,"0")}`;
-  stage.appendChild(counter);
-
-  const hint = document.createElement("div");
-  hint.className = "reel-hint";
-  hint.textContent = "↓ scroll to advance";
-  stage.appendChild(hint);
-
-  const slash = stage.querySelector(".slash-wipe");
+  if (frames.length === 0) return;
 
   let last = -1;
-  let raf = 0;
-  const update = () => {
-    raf = 0;
-    const r = reel.getBoundingClientRect();
-    const total = reel.offsetHeight - window.innerHeight;
-    const scrolled = Math.max(0, Math.min(total, -r.top));
-    const p = total > 0 ? scrolled / total : 0;
-    if (progress) progress.style.width = `${(p * 100).toFixed(2)}%`;
 
-    // don't activate any frame until the reel has actually entered the viewport
-    // and become sticky-pinned — otherwise the slam-in animations play off-screen
-    // and the user sees a static frame when they finally scroll to it.
-    if (r.top > 0) {
-      if (last !== -1) {
-        frames.forEach(f => f.classList.remove("active", "leaving"));
-        counter.textContent = `// frame 01 / ${String(frames.length).padStart(2, "0")}`;
-        last = -1;
-      }
-      return;
-    }
+  const activate = (idx) => {
+    if (idx === last) return;
+    frames.forEach((f, i) => {
+      f.classList.remove("active", "leaving");
+      if (i === idx) f.classList.add("active");
+      else if (i < idx) f.classList.add("leaving");
+    });
+    last = idx;
+  };
 
-    const idx = Math.min(frames.length - 1, Math.floor(p * frames.length));
-    if (idx !== last) {
+  // pick the frame whose intersection ratio is highest at any given time.
+  // this makes the slam fire decisively as scroll-snap pulls each frame
+  // into the viewport.
+  const io = new IntersectionObserver(
+    (entries) => {
+      // find the most-visible frame across all current entries
+      let best = { ratio: 0, idx: -1 };
+      // also consult untracked frames via current bounding-rects
       frames.forEach((f, i) => {
-        f.classList.remove("active", "leaving");
-        if (i === idx) f.classList.add("active");
-        else if (i < idx) f.classList.add("leaving");
+        const r = f.getBoundingClientRect();
+        const visible = Math.max(0, Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0));
+        const ratio = visible / Math.min(window.innerHeight, r.height || window.innerHeight);
+        if (ratio > best.ratio) { best = { ratio, idx: i }; }
       });
-      counter.textContent =
-        `// frame ${String(idx + 1).padStart(2, "0")} / ${String(frames.length).padStart(2, "0")}`;
+      if (best.idx >= 0 && best.ratio >= 0.5) activate(best.idx);
+    },
+    { threshold: [0, 0.25, 0.5, 0.75, 1] }
+  );
 
-      // anime slam: combined zoom-punch + screen-shake
-      stage.classList.remove("slam");
-      void stage.offsetWidth;
-      stage.classList.add("slam");
-
-      // diagonal slash wipe between frames
-      if (slash) {
-        slash.classList.remove("go");
-        void slash.offsetWidth;
-        slash.classList.add("go");
-      }
-
-      last = idx;
-    }
-  };
-
-  const onScroll = () => {
-    if (!raf) raf = requestAnimationFrame(update);
-  };
-  window.addEventListener("scroll", onScroll, { passive: true });
-  window.addEventListener("resize", onScroll);
-  update();
+  frames.forEach((f) => io.observe(f));
 })();
 
 /* ============== laser sound-cue (visual tick) ============== */
