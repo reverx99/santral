@@ -9,3 +9,6 @@ src-tauri/target/
 src-tauri/gen/
 src-tauri/.cargo/
 src-tauri/Cargo.lock.bak
+
+# screenshot output
+shots/

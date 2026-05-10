@@ -149,9 +149,13 @@ button { font: inherit; cursor: pointer; }
 }
 .nav-item.active .nav-glyph { color: var(--pink); }
 .nav-item.is-disabled, .nav-item:disabled {
-  color: var(--fg-muted);
+  color: var(--fg-dim);
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.62;
+}
+.nav-item.is-disabled .nav-glyph,
+.nav-item:disabled .nav-glyph {
+  color: var(--fg-muted);
 }
 
 .sidebar-footer {
