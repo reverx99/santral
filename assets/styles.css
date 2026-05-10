@@ -540,7 +540,7 @@ main { position: relative; z-index: 1; }
 
 .reel {
   --frames: 7;
-  --frame-vh: 55vh;
+  --frame-vh: 30vh;
   position: relative;
   height: calc(var(--frames) * var(--frame-vh) + 100vh);
   margin-top: 40px;
@@ -621,7 +621,7 @@ main { position: relative; z-index: 1; }
           mask-image: radial-gradient(circle at center, transparent 16%, black 32%, black 68%, transparent 92%);
   filter: drop-shadow(0 0 18px var(--c));
 }
-.reel-frame.active::before { animation: speed-lines 0.95s cubic-bezier(.2,.8,.2,1); }
+.reel-frame.active::before { animation: speed-lines 0.6s cubic-bezier(.2,.8,.2,1); }
 @keyframes speed-lines {
   0%   { transform: scale(0.25) rotate(-18deg); opacity: 0; }
   25%  { transform: scale(1.25) rotate(8deg);   opacity: 1; }
@@ -641,7 +641,7 @@ main { position: relative; z-index: 1; }
   -webkit-mask-image: radial-gradient(circle at 50% 55%, black 0%, transparent 65%);
           mask-image: radial-gradient(circle at 50% 55%, black 0%, transparent 65%);
 }
-.reel-frame.active::after { animation: halftone-burst 0.7s ease-out; }
+.reel-frame.active::after { animation: halftone-burst 0.45s ease-out; }
 @keyframes halftone-burst {
   0%   { opacity: 0; transform: scale(0.55); }
   35%  { opacity: 0.55; transform: scale(1.15); }
@@ -666,8 +666,8 @@ main { position: relative; z-index: 1; }
 }
 .reel-frame.active .reel-glyph {
   animation:
-    glyph-spin-in 0.7s cubic-bezier(.34,1.56,.64,1),
-    glyph-throb 1.8s ease-in-out 0.7s infinite;
+    glyph-spin-in 0.5s cubic-bezier(.34,1.56,.64,1),
+    glyph-throb 1.8s ease-in-out 0.5s infinite;
 }
 @keyframes glyph-spin-in {
   0%   { transform: rotate(-220deg) scale(0.2); opacity: 0; filter: blur(20px); }
@@ -705,10 +705,10 @@ main { position: relative; z-index: 1; }
   transform: rotate(10deg) scale(0);
 }
 .reel-frame.active .reel-bang {
-  animation: bang-slam 0.9s cubic-bezier(.34,1.56,.64,1) forwards;
+  animation: bang-slam 0.55s cubic-bezier(.34,1.56,.64,1) forwards;
 }
 .reel-frame.active:nth-child(even) .reel-bang {
-  animation: bang-slam-rev 0.9s cubic-bezier(.34,1.56,.64,1) forwards;
+  animation: bang-slam-rev 0.55s cubic-bezier(.34,1.56,.64,1) forwards;
 }
 @keyframes bang-slam {
   0%   { opacity: 0; transform: rotate(-14deg) scale(3.6); filter: blur(28px); }
@@ -725,22 +725,22 @@ main { position: relative; z-index: 1; }
 
 /* anime: title kick on slam */
 .reel-frame.active .reel-title {
-  animation: title-kick 0.7s cubic-bezier(.16,.84,.24,1);
+  animation: title-kick 0.5s cubic-bezier(.16,.84,.24,1);
 }
 @keyframes title-kick {
   0%   { transform: scale(1.45) translateY(-20px); filter: blur(14px); letter-spacing: 0.45em; }
-  60%  { transform: scale(0.96) translateY(0);     filter: blur(0);    letter-spacing: 0.03em; }
+  55%  { transform: scale(0.96) translateY(0);     filter: blur(0);    letter-spacing: 0.03em; }
   100% { transform: scale(1)    translateY(0); }
 }
 .reel-frame.active .reel-kicker {
-  animation: kicker-pop 0.5s ease-out 0.05s both;
+  animation: kicker-pop 0.35s ease-out both;
 }
 @keyframes kicker-pop {
   0%   { transform: translateY(20px) scale(0.8); opacity: 0; }
   100% { transform: translateY(0)    scale(1);   opacity: 1; }
 }
 .reel-frame.active .reel-sub {
-  animation: sub-fade 0.6s ease-out 0.15s both;
+  animation: sub-fade 0.4s ease-out 0.08s both;
 }
 @keyframes sub-fade {
   0%   { opacity: 0; transform: translateY(14px); }
@@ -748,7 +748,7 @@ main { position: relative; z-index: 1; }
 }
 
 /* anime: combined slam impact (zoom-punch + screen-shake) on whole stage */
-.reel-stage.slam { animation: slam-impact 0.5s cubic-bezier(.36,1.7,.42,1); }
+.reel-stage.slam { animation: slam-impact 0.35s cubic-bezier(.36,1.7,.42,1); }
 @keyframes slam-impact {
   0%   { transform: translate(0, 0) scale(1); }
   8%   { transform: translate(-7px, 4px) scale(1.06); }
@@ -779,7 +779,7 @@ main { position: relative; z-index: 1; }
   mix-blend-mode: screen;
   opacity: 0;
 }
-.reel-stage .slash-wipe.go { animation: slash-wipe 0.42s ease-out forwards; }
+.reel-stage .slash-wipe.go { animation: slash-wipe 0.32s ease-out forwards; }
 @keyframes slash-wipe {
   0%   { transform: translateX(-130%) skewX(-12deg); opacity: 0; }
   20%  { opacity: 1; }
@@ -802,7 +802,7 @@ main { position: relative; z-index: 1; }
   transform: scale(0.6);
 }
 .reel-frame.active .reel-aura {
-  animation: aura-pulse 0.9s ease-out, aura-breathe 3s ease-in-out 0.9s infinite;
+  animation: aura-pulse 0.55s ease-out, aura-breathe 3s ease-in-out 0.55s infinite;
 }
 @keyframes aura-pulse {
   0%   { opacity: 0; transform: scale(0.4); }

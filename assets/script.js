@@ -323,6 +323,18 @@
     const p = total > 0 ? scrolled / total : 0;
     if (progress) progress.style.width = `${(p * 100).toFixed(2)}%`;
 
+    // don't activate any frame until the reel has actually entered the viewport
+    // and become sticky-pinned — otherwise the slam-in animations play off-screen
+    // and the user sees a static frame when they finally scroll to it.
+    if (r.top > 0) {
+      if (last !== -1) {
+        frames.forEach(f => f.classList.remove("active", "leaving"));
+        counter.textContent = `// frame 01 / ${String(frames.length).padStart(2, "0")}`;
+        last = -1;
+      }
+      return;
+    }
+
     const idx = Math.min(frames.length - 1, Math.floor(p * frames.length));
     if (idx !== last) {
       frames.forEach((f, i) => {
