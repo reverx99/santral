@@ -1,14 +1,16 @@
 // santral — frontend bootstrap. Tauri komutlarını çağırır, sayfaları render eder.
 
 import { invoke } from "@tauri-apps/api/core";
-import { renderSistem }   from "./pages/sistem.js";
-import { renderDonanim }  from "./pages/donanim.js";
-import { renderHakkinda } from "./pages/hakkinda.js";
+import { renderSistem }      from "./pages/sistem.js";
+import { renderDonanim }     from "./pages/donanim.js";
+import { renderUygulamalar } from "./pages/uygulamalar.js";
+import { renderHakkinda }    from "./pages/hakkinda.js";
 
 const ROUTES = {
-  sistem:   { label: "SİSTEM",   render: renderSistem,   num: "// 01" },
-  donanim:  { label: "DONANIM",  render: renderDonanim,  num: "// 02" },
-  hakkinda: { label: "HAKKINDA", render: renderHakkinda, num: "// 99" },
+  sistem:      { label: "SİSTEM",      render: renderSistem,      num: "// 01" },
+  donanim:     { label: "DONANIM",     render: renderDonanim,     num: "// 02" },
+  uygulamalar: { label: "UYGULAMALAR", render: renderUygulamalar, num: "// 03" },
+  hakkinda:    { label: "HAKKINDA",    render: renderHakkinda,    num: "// 99" },
 };
 
 const DEFAULT_ROUTE = "sistem";

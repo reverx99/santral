@@ -1,9 +1,26 @@
 // preview entry — Tauri olmadan tarayıcıda mock veriyle render etmek için.
 // Sadece UI'yi göstermeye yarar; sürüme hiçbir etkisi yoktur.
 
-import { renderSistem }   from "./pages/sistem.js";
-import { renderDonanim }  from "./pages/donanim.js";
-import { renderHakkinda } from "./pages/hakkinda.js";
+import { renderSistem }      from "./pages/sistem.js";
+import { renderDonanim }     from "./pages/donanim.js";
+import { renderUygulamalar } from "./pages/uygulamalar.js";
+import { renderHakkinda }    from "./pages/hakkinda.js";
+
+let CATALOG_CACHE = null;
+async function loadCatalog() {
+  if (CATALOG_CACHE) return CATALOG_CACHE;
+  const r = await fetch("/data/apps.json");
+  const raw = await r.json();
+  CATALOG_CACHE = {
+    version: raw.version,
+    updated: raw.updated,
+    categories: raw.categories,
+    apps: raw.apps,
+    detected_sources: ["apt", "flatpak"],
+    preferred_source: "apt",
+  };
+  return CATALOG_CACHE;
+}
 
 const MOCK = {
   app_info: () => ({
@@ -97,15 +114,20 @@ const MOCK = {
 };
 
 const invoke = async (cmd) => {
+  if (cmd === "app_catalog") {
+    await new Promise((r) => setTimeout(r, 60));
+    return await loadCatalog();
+  }
   if (!MOCK[cmd]) throw new Error("unknown command: " + cmd);
   await new Promise((r) => setTimeout(r, 60));
   return MOCK[cmd]();
 };
 
 const ROUTES = {
-  sistem:   { label: "SİSTEM",   render: renderSistem },
-  donanim:  { label: "DONANIM",  render: renderDonanim },
-  hakkinda: { label: "HAKKINDA", render: renderHakkinda },
+  sistem:      { label: "SİSTEM",      render: renderSistem },
+  donanim:     { label: "DONANIM",     render: renderDonanim },
+  uygulamalar: { label: "UYGULAMALAR", render: renderUygulamalar },
+  hakkinda:    { label: "HAKKINDA",    render: renderHakkinda },
 };
 
 const $page    = document.getElementById("page");

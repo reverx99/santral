@@ -1,0 +1,299 @@
+{
+  "$schema": "https://santral.org/schemas/apps-v1.json",
+  "version": 1,
+  "updated": "2026-05-10",
+  "categories": [
+    { "id": "browser",  "label": "TARAYICI",     "color": "#ff0099", "glyph": "◤" },
+    { "id": "media",    "label": "MEDYA",        "color": "#00f0ff", "glyph": "▶" },
+    { "id": "office",   "label": "OFİS",         "color": "#b400ff", "glyph": "▤" },
+    { "id": "dev",      "label": "GELİŞTİRME",   "color": "#ffd400", "glyph": "⚙" },
+    { "id": "graphics", "label": "GRAFİK",       "color": "#ff0099", "glyph": "✎" },
+    { "id": "comm",     "label": "İLETİŞİM",     "color": "#00f0ff", "glyph": "✉" },
+    { "id": "system",   "label": "SİSTEM",       "color": "#b400ff", "glyph": "▮" },
+    { "id": "gaming",   "label": "OYUN",         "color": "#ffd400", "glyph": "✱" },
+    { "id": "utility",  "label": "ARAÇLAR",      "color": "#66ff99", "glyph": "✚" }
+  ],
+  "apps": [
+    {
+      "id": "firefox", "name": "Firefox", "category": "browser",
+      "description": "Mozilla'nın açık kaynak, gizlilik odaklı modern web tarayıcısı.",
+      "homepage": "https://www.mozilla.org/firefox/",
+      "tags": ["mozilla", "web", "açık-kaynak"],
+      "sources": { "apt": "firefox", "dnf": "firefox", "pacman": "firefox", "zypper": "MozillaFirefox", "flatpak": "org.mozilla.firefox" }
+    },
+    {
+      "id": "brave", "name": "Brave", "category": "browser",
+      "description": "Reklamı ve takip kodlarını varsayılan olarak engelleyen Chromium tabanlı tarayıcı.",
+      "homepage": "https://brave.com",
+      "tags": ["chromium", "gizlilik", "ad-block"],
+      "sources": { "flatpak": "com.brave.Browser" }
+    },
+    {
+      "id": "chromium", "name": "Chromium", "category": "browser",
+      "description": "Google Chrome'un açık kaynak temeli.",
+      "homepage": "https://www.chromium.org",
+      "tags": ["chromium", "google-free"],
+      "sources": { "apt": "chromium-browser", "dnf": "chromium", "pacman": "chromium", "zypper": "chromium", "flatpak": "org.chromium.Chromium" }
+    },
+    {
+      "id": "tor-browser", "name": "Tor Browser", "category": "browser",
+      "description": "Tor ağı üzerinden anonim gezinti için sertleştirilmiş Firefox.",
+      "homepage": "https://www.torproject.org",
+      "tags": ["anonim", "tor", "gizlilik"],
+      "sources": { "flatpak": "com.github.micahflee.torbrowser-launcher", "apt": "torbrowser-launcher" }
+    },
+
+    {
+      "id": "vlc", "name": "VLC", "category": "media",
+      "description": "Hemen her formatı oynatan efsanevi medya oynatıcısı.",
+      "homepage": "https://www.videolan.org/vlc/",
+      "tags": ["video", "ses", "her-format"],
+      "sources": { "apt": "vlc", "dnf": "vlc", "pacman": "vlc", "zypper": "vlc", "flatpak": "org.videolan.VLC" }
+    },
+    {
+      "id": "mpv", "name": "mpv", "category": "media",
+      "description": "Hafif, scriptlenebilir, klavye ağırlıklı modern video oynatıcı.",
+      "homepage": "https://mpv.io",
+      "tags": ["video", "minimal", "scriptable"],
+      "sources": { "apt": "mpv", "dnf": "mpv", "pacman": "mpv", "zypper": "mpv", "flatpak": "io.mpv.Mpv" }
+    },
+    {
+      "id": "spotify", "name": "Spotify", "category": "media",
+      "description": "Resmi Spotify masaüstü istemcisi.",
+      "homepage": "https://www.spotify.com",
+      "tags": ["müzik", "streaming"],
+      "sources": { "snap": "spotify", "flatpak": "com.spotify.Client" }
+    },
+    {
+      "id": "audacity", "name": "Audacity", "category": "media",
+      "description": "Çok kanallı ses kayıt, düzenleme ve mastering aracı.",
+      "homepage": "https://www.audacityteam.org",
+      "tags": ["ses", "kayıt", "düzenleme"],
+      "sources": { "apt": "audacity", "dnf": "audacity", "pacman": "audacity", "zypper": "audacity", "flatpak": "org.audacityteam.Audacity" }
+    },
+    {
+      "id": "obs-studio", "name": "OBS Studio", "category": "media",
+      "description": "Yayın ve kayıt için endüstri standardı yazılım.",
+      "homepage": "https://obsproject.com",
+      "tags": ["yayın", "kayıt", "stream"],
+      "sources": { "apt": "obs-studio", "dnf": "obs-studio", "pacman": "obs-studio", "zypper": "obs-studio", "flatpak": "com.obsproject.Studio" }
+    },
+
+    {
+      "id": "libreoffice", "name": "LibreOffice", "category": "office",
+      "description": "Tam donanımlı ofis paketi: Writer, Calc, Impress, Draw, Base.",
+      "homepage": "https://www.libreoffice.org",
+      "tags": ["ofis", "doküman", "açık-kaynak"],
+      "sources": { "apt": "libreoffice", "dnf": "libreoffice", "pacman": "libreoffice-fresh", "zypper": "libreoffice", "flatpak": "org.libreoffice.LibreOffice" }
+    },
+    {
+      "id": "onlyoffice", "name": "OnlyOffice", "category": "office",
+      "description": "Microsoft Office formatlarıyla birebir uyumlu modern ofis paketi.",
+      "homepage": "https://www.onlyoffice.com",
+      "tags": ["ofis", "msoffice-uyumlu"],
+      "sources": { "snap": "onlyoffice-desktopeditors", "flatpak": "org.onlyoffice.desktopeditors" }
+    },
+    {
+      "id": "obsidian", "name": "Obsidian", "category": "office",
+      "description": "Markdown tabanlı, yerel-öncelikli ikinci beyin.",
+      "homepage": "https://obsidian.md",
+      "tags": ["not", "markdown", "knowledge-base"],
+      "sources": { "snap": "obsidian", "flatpak": "md.obsidian.Obsidian" }
+    },
+    {
+      "id": "joplin", "name": "Joplin", "category": "office",
+      "description": "Açık kaynak, uçtan uca şifreli not alma uygulaması.",
+      "homepage": "https://joplinapp.org",
+      "tags": ["not", "e2ee", "sync"],
+      "sources": { "flatpak": "net.cozic.joplin_desktop" }
+    },
+
+    {
+      "id": "vscode", "name": "Visual Studio Code", "category": "dev",
+      "description": "Microsoft'un eklenti ekosistemi geniş, açık kaynak kod editörü.",
+      "homepage": "https://code.visualstudio.com",
+      "tags": ["editor", "ide", "extensions"],
+      "sources": { "snap": "code", "flatpak": "com.visualstudio.code" }
+    },
+    {
+      "id": "neovim", "name": "Neovim", "category": "dev",
+      "description": "Modern, lua tabanlı vim çatalı; terminalin keskin kılıcı.",
+      "homepage": "https://neovim.io",
+      "tags": ["editor", "terminal", "vim"],
+      "sources": { "apt": "neovim", "dnf": "neovim", "pacman": "neovim", "zypper": "neovim" }
+    },
+    {
+      "id": "git", "name": "Git", "category": "dev",
+      "description": "Sürüm kontrolünün de facto standardı.",
+      "homepage": "https://git-scm.com",
+      "tags": ["vcs", "cli"],
+      "sources": { "apt": "git", "dnf": "git", "pacman": "git", "zypper": "git" }
+    },
+    {
+      "id": "docker", "name": "Docker", "category": "dev",
+      "description": "Konteyner çalıştırma ortamı (CLI + daemon).",
+      "homepage": "https://www.docker.com",
+      "tags": ["container", "devops"],
+      "sources": { "apt": "docker.io", "dnf": "docker", "pacman": "docker", "zypper": "docker" }
+    },
+    {
+      "id": "postman", "name": "Postman", "category": "dev",
+      "description": "API geliştirme ve test için popüler GUI.",
+      "homepage": "https://www.postman.com",
+      "tags": ["api", "rest", "test"],
+      "sources": { "snap": "postman", "flatpak": "com.getpostman.Postman" }
+    },
+    {
+      "id": "dbeaver", "name": "DBeaver", "category": "dev",
+      "description": "Tüm büyük SQL veritabanlarını destekleyen evrensel GUI.",
+      "homepage": "https://dbeaver.io",
+      "tags": ["sql", "veritabanı", "gui"],
+      "sources": { "snap": "dbeaver-ce", "flatpak": "io.dbeaver.DBeaverCommunity" }
+    },
+
+    {
+      "id": "gimp", "name": "GIMP", "category": "graphics",
+      "description": "Açık kaynak görüntü düzenleyici. Photoshop alternatifi.",
+      "homepage": "https://www.gimp.org",
+      "tags": ["raster", "photo", "düzenleme"],
+      "sources": { "apt": "gimp", "dnf": "gimp", "pacman": "gimp", "zypper": "gimp", "flatpak": "org.gimp.GIMP" }
+    },
+    {
+      "id": "inkscape", "name": "Inkscape", "category": "graphics",
+      "description": "Profesyonel SVG vektör grafik editörü.",
+      "homepage": "https://inkscape.org",
+      "tags": ["vector", "svg", "tasarım"],
+      "sources": { "apt": "inkscape", "dnf": "inkscape", "pacman": "inkscape", "zypper": "inkscape", "flatpak": "org.inkscape.Inkscape" }
+    },
+    {
+      "id": "krita", "name": "Krita", "category": "graphics",
+      "description": "Dijital ressamlar için yapılmış güçlü çizim uygulaması.",
+      "homepage": "https://krita.org",
+      "tags": ["digital-painting", "raster", "illustration"],
+      "sources": { "apt": "krita", "dnf": "krita", "pacman": "krita", "zypper": "krita", "flatpak": "org.kde.krita" }
+    },
+    {
+      "id": "blender", "name": "Blender", "category": "graphics",
+      "description": "3D modelleme, animasyon, sculpting, video düzenleme — tek pakette.",
+      "homepage": "https://www.blender.org",
+      "tags": ["3d", "animasyon", "vfx"],
+      "sources": { "apt": "blender", "dnf": "blender", "pacman": "blender", "zypper": "blender", "flatpak": "org.blender.Blender" }
+    },
+
+    {
+      "id": "discord", "name": "Discord", "category": "comm",
+      "description": "Topluluk sohbet ve ses kanalları platformu.",
+      "homepage": "https://discord.com",
+      "tags": ["chat", "voice", "topluluk"],
+      "sources": { "snap": "discord", "flatpak": "com.discordapp.Discord" }
+    },
+    {
+      "id": "telegram", "name": "Telegram", "category": "comm",
+      "description": "Hızlı, bulut tabanlı mesajlaşma istemcisi.",
+      "homepage": "https://telegram.org",
+      "tags": ["mesaj", "bulut"],
+      "sources": { "apt": "telegram-desktop", "dnf": "telegram-desktop", "pacman": "telegram-desktop", "zypper": "telegram-desktop", "flatpak": "org.telegram.desktop" }
+    },
+    {
+      "id": "signal", "name": "Signal", "category": "comm",
+      "description": "Uçtan uca şifreli, gizliliğe odaklı mesajlaşma.",
+      "homepage": "https://signal.org",
+      "tags": ["e2ee", "gizlilik", "mesaj"],
+      "sources": { "flatpak": "org.signal.Signal" }
+    },
+    {
+      "id": "element", "name": "Element", "category": "comm",
+      "description": "Matrix protokolü için referans istemci. Federe ve şifreli.",
+      "homepage": "https://element.io",
+      "tags": ["matrix", "federe", "e2ee"],
+      "sources": { "flatpak": "im.riot.Riot" }
+    },
+    {
+      "id": "thunderbird", "name": "Thunderbird", "category": "comm",
+      "description": "Mozilla'nın açık kaynak e-posta istemcisi.",
+      "homepage": "https://www.thunderbird.net",
+      "tags": ["mail", "imap", "smtp"],
+      "sources": { "apt": "thunderbird", "dnf": "thunderbird", "pacman": "thunderbird", "zypper": "MozillaThunderbird", "flatpak": "org.mozilla.Thunderbird" }
+    },
+
+    {
+      "id": "htop", "name": "htop", "category": "system",
+      "description": "İnteraktif ncurses süreç izleyici.",
+      "homepage": "https://htop.dev",
+      "tags": ["monitor", "terminal", "tui"],
+      "sources": { "apt": "htop", "dnf": "htop", "pacman": "htop", "zypper": "htop" }
+    },
+    {
+      "id": "btop", "name": "btop", "category": "system",
+      "description": "htop'un grafiksel, renkli, modern halefi.",
+      "homepage": "https://github.com/aristocratos/btop",
+      "tags": ["monitor", "terminal", "tui"],
+      "sources": { "apt": "btop", "dnf": "btop", "pacman": "btop", "zypper": "btop" }
+    },
+    {
+      "id": "fastfetch", "name": "fastfetch", "category": "system",
+      "description": "Neofetch'in hızlı, modern alternatifi — sistem özet kartı.",
+      "homepage": "https://github.com/fastfetch-cli/fastfetch",
+      "tags": ["info", "terminal"],
+      "sources": { "apt": "fastfetch", "dnf": "fastfetch", "pacman": "fastfetch", "zypper": "fastfetch" }
+    },
+    {
+      "id": "timeshift", "name": "Timeshift", "category": "system",
+      "description": "Sistem geri yükleme noktaları — Linux için zaman kapsülü.",
+      "homepage": "https://github.com/linuxmint/timeshift",
+      "tags": ["yedek", "snapshot", "geri-yükleme"],
+      "sources": { "apt": "timeshift", "dnf": "timeshift", "pacman": "timeshift" }
+    },
+
+    {
+      "id": "steam", "name": "Steam", "category": "gaming",
+      "description": "Valve'in oyun mağazası ve kütüphanesi. Proton ile Windows oyunları çalışır.",
+      "homepage": "https://store.steampowered.com",
+      "tags": ["oyun", "valve", "proton"],
+      "sources": { "apt": "steam-installer", "pacman": "steam", "flatpak": "com.valvesoftware.Steam" }
+    },
+    {
+      "id": "lutris", "name": "Lutris", "category": "gaming",
+      "description": "Linux'ta Windows oyunları, retro emülatörleri ve native oyunları yönet.",
+      "homepage": "https://lutris.net",
+      "tags": ["oyun", "wine", "emülatör"],
+      "sources": { "apt": "lutris", "dnf": "lutris", "pacman": "lutris", "flatpak": "net.lutris.Lutris" }
+    },
+    {
+      "id": "retroarch", "name": "RetroArch", "category": "gaming",
+      "description": "Çok platformlu retro konsol emülatör frontend'i.",
+      "homepage": "https://www.retroarch.com",
+      "tags": ["emülatör", "retro"],
+      "sources": { "apt": "retroarch", "pacman": "retroarch", "flatpak": "org.libretro.RetroArch" }
+    },
+
+    {
+      "id": "keepassxc", "name": "KeePassXC", "category": "utility",
+      "description": "Yerel, ücretsiz, açık kaynak şifre yöneticisi.",
+      "homepage": "https://keepassxc.org",
+      "tags": ["şifre", "kasacık", "yerel"],
+      "sources": { "apt": "keepassxc", "dnf": "keepassxc", "pacman": "keepassxc", "zypper": "keepassxc", "flatpak": "org.keepassxc.KeePassXC" }
+    },
+    {
+      "id": "bitwarden", "name": "Bitwarden", "category": "utility",
+      "description": "Bulut senkronizasyonlu açık kaynak şifre yöneticisi.",
+      "homepage": "https://bitwarden.com",
+      "tags": ["şifre", "bulut", "e2ee"],
+      "sources": { "snap": "bitwarden", "flatpak": "com.bitwarden.desktop" }
+    },
+    {
+      "id": "virtualbox", "name": "VirtualBox", "category": "utility",
+      "description": "Oracle'ın masaüstü sanallaştırma platformu.",
+      "homepage": "https://www.virtualbox.org",
+      "tags": ["vm", "sanallaştırma"],
+      "sources": { "apt": "virtualbox", "dnf": "VirtualBox", "pacman": "virtualbox" }
+    },
+    {
+      "id": "syncthing", "name": "Syncthing", "category": "utility",
+      "description": "Cihazlar arası p2p dosya senkronizasyonu — bulutsuz Dropbox.",
+      "homepage": "https://syncthing.net",
+      "tags": ["sync", "p2p", "yerel"],
+      "sources": { "apt": "syncthing", "dnf": "syncthing", "pacman": "syncthing", "zypper": "syncthing", "flatpak": "me.kozec.syncthingtk" }
+    }
+  ]
+}

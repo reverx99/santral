@@ -3,6 +3,7 @@
 //! Bu crate Tauri uygulamasının çekirdeğini barındırır. Frontend ile köprü
 //! kurulan komutlar burada `#[tauri::command]` olarak işaretlenir.
 
+mod catalog;
 mod distro;
 mod hardware;
 mod system;
@@ -44,6 +45,11 @@ fn hardware_info() -> hardware::HardwareInfo {
     hardware::collect()
 }
 
+#[tauri::command]
+fn app_catalog() -> catalog::Catalog {
+    catalog::collect()
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -52,6 +58,7 @@ pub fn run() {
             distro_info,
             system_info,
             hardware_info,
+            app_catalog,
         ])
         .run(tauri::generate_context!())
         .expect("santral: tauri runtime failed");

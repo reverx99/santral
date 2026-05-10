@@ -407,6 +407,303 @@ button { font: inherit; cursor: pointer; }
   to   { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
+/* ============== uygulamalar (apps catalog) ============== */
+
+.src-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--fg-dim);
+  text-transform: uppercase;
+}
+.src-label { color: var(--fg-muted); }
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid color-mix(in srgb, var(--c, var(--yellow)) 60%, transparent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--c, var(--yellow)) 8%, transparent), transparent 60%),
+    rgba(10, 10, 16, 0.6);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  position: relative;
+}
+.hint-glyph {
+  font-family: var(--f-display);
+  font-size: 32px;
+  color: var(--c, var(--yellow));
+  text-shadow: 0 0 12px var(--c, var(--yellow));
+  line-height: 1;
+}
+.hint-body {
+  flex: 1;
+  font-size: 13px;
+  color: var(--fg-dim);
+  line-height: 1.5;
+}
+.hint-body strong {
+  color: var(--c, var(--yellow));
+  text-shadow: 0 0 6px color-mix(in srgb, var(--c, var(--yellow)) 50%, transparent);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+.apps-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+  position: sticky;
+  top: -28px;
+  z-index: 4;
+  padding-top: 8px;
+  background: linear-gradient(to bottom, var(--bg) 70%, transparent);
+}
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.search-glyph {
+  position: absolute;
+  left: 14px;
+  color: var(--fg-muted);
+  font-family: var(--f-display);
+  font-size: 18px;
+  pointer-events: none;
+}
+.search input {
+  flex: 1;
+  width: 100%;
+  background: rgba(10, 10, 16, 0.6);
+  border: 1px solid var(--line-2);
+  color: var(--fg);
+  font-family: var(--f-mono);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  padding: 12px 14px 12px 40px;
+  outline: none;
+  transition: all 0.15s ease;
+}
+.search input::placeholder {
+  color: var(--fg-muted);
+  letter-spacing: 0.16em;
+  text-transform: lowercase;
+}
+.search input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 1px var(--cyan), 0 0 16px rgba(0, 240, 255, 0.2);
+}
+
+.cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cat-chip {
+  background: transparent;
+  border: 1px solid var(--line-2);
+  color: var(--fg-dim);
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  padding: 6px 12px;
+  transition: all 0.15s ease;
+}
+.cat-chip:hover {
+  border-color: var(--c, var(--cyan));
+  color: var(--c, var(--cyan));
+  text-shadow: 0 0 6px var(--c, var(--cyan));
+}
+.cat-chip.active {
+  background: var(--c, var(--pink));
+  border-color: var(--c, var(--pink));
+  color: #000;
+  text-shadow: none;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--c, var(--pink)) 50%, transparent);
+}
+
+.apps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.app-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line-2);
+  background: rgba(10, 10, 16, 0.55);
+  padding: 16px 16px 14px;
+  overflow: hidden;
+  transition: all 0.18s ease;
+}
+.app-card::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 2px;
+  background: var(--c);
+  opacity: 0.6;
+  transition: opacity 0.18s ease, height 0.18s ease;
+}
+.app-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--c);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent),
+    0 12px 28px -16px color-mix(in srgb, var(--c) 50%, transparent),
+    0 0 30px color-mix(in srgb, var(--c) 14%, transparent);
+}
+.app-card:hover::before { opacity: 1; height: 3px; }
+
+.app-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.app-cat {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  color: var(--c);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.app-home {
+  color: var(--fg-muted);
+  font-size: 14px;
+  text-decoration: none;
+  border: 1px solid var(--line-2);
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.app-home:hover {
+  color: var(--cyan);
+  border-color: var(--cyan);
+  text-shadow: 0 0 6px var(--cyan);
+}
+
+.app-name {
+  font-family: var(--f-display);
+  font-size: 24px;
+  letter-spacing: 0.04em;
+  margin: 0 0 6px;
+  line-height: 1;
+  color: #fff;
+}
+.app-desc {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fg-dim);
+  margin: 0 0 10px;
+  min-height: 2.6em;
+}
+
+.app-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+  min-height: 18px;
+}
+.app-tag {
+  font-family: var(--f-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  border: 1px solid var(--line-2);
+  padding: 2px 5px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.app-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.src-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.src-chip {
+  font-family: var(--f-mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  padding: 3px 6px;
+  border: 1px solid var(--line-2);
+  color: var(--fg-muted);
+  background: rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+}
+.src-chip.on {
+  color: var(--cyan);
+  border-color: color-mix(in srgb, var(--cyan) 60%, transparent);
+  text-shadow: 0 0 4px rgba(0, 240, 255, 0.4);
+}
+.src-chip.on.pref {
+  color: var(--pink);
+  border-color: var(--pink);
+  background: color-mix(in srgb, var(--pink) 12%, transparent);
+  text-shadow: 0 0 6px rgba(255, 0, 153, 0.5);
+}
+
+.install-btn {
+  --c: var(--c, #00f0ff);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  padding: 7px 12px;
+  white-space: nowrap;
+}
+.install-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.install-btn.off {
+  border-color: var(--line-2);
+  color: var(--fg-muted);
+  text-shadow: none;
+}
+.install-btn.off:hover {
+  background: transparent;
+  color: var(--fg-muted);
+}
+
+.apps-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--fg-muted);
+  font-family: var(--f-mono);
+  letter-spacing: 0.22em;
+  font-size: 13px;
+  text-transform: lowercase;
+}
+.apps-empty .reel-glyph {
+  display: block;
+  font-size: 80px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
