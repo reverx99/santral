@@ -17,6 +17,17 @@ pub struct HardwareInfo {
     pub secure_boot: SecureBootInfo,
     pub modules: ModulesInfo,
     pub uefi: bool,
+    pub displays: Vec<DisplayInfo>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct DisplayInfo {
+    pub connector: String,           // örn. "card0-DP-1"
+    pub status: String,              // connected / disconnected
+    pub enabled: bool,
+    pub current_mode: Option<String>,// örn. "1920x1080"
+    pub modes_count: u32,
+    pub preferred_mode: Option<String>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -80,6 +91,11 @@ pub struct NetworkInterface {
     pub ipv4: Vec<String>,
     pub ipv6: Vec<String>,
     pub kind: String, // ethernet / wifi / loopback / virtual
+    pub rx_bytes: u64,
+    pub tx_bytes: u64,
+    pub rx_packets: u64,
+    pub tx_packets: u64,
+    pub speed_mbps: Option<u64>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -115,7 +131,55 @@ pub fn collect() -> HardwareInfo {
         secure_boot: collect_secure_boot(),
         modules: collect_modules(),
         uefi: std::path::Path::new("/sys/firmware/efi").exists(),
+        displays: collect_displays(),
     }
+}
+
+fn collect_displays() -> Vec<DisplayInfo> {
+    let mut out = Vec::new();
+    let Ok(entries) = std::fs::read_dir("/sys/class/drm") else { return out; };
+    for e in entries.flatten() {
+        let name = e.file_name().to_string_lossy().to_string();
+        let path = e.path();
+        // sadece "card0-..." gibi connector dizinleri; "card0" kendisini atla.
+        if !name.starts_with("card") || !name.contains('-') {
+            continue;
+        }
+        let status_path = path.join("status");
+        if !status_path.exists() {
+            continue;
+        }
+        let status = std::fs::read_to_string(&status_path)
+            .map(|s| s.trim().to_string())
+            .unwrap_or_default();
+        let enabled = std::fs::read_to_string(path.join("enabled"))
+            .map(|s| s.trim().to_string())
+            .map(|s| s == "enabled")
+            .unwrap_or(false);
+        let modes_text = std::fs::read_to_string(path.join("modes")).unwrap_or_default();
+        let modes: Vec<String> = modes_text
+            .lines()
+            .filter(|l| !l.trim().is_empty())
+            .map(|l| l.trim().to_string())
+            .collect();
+        let preferred_mode = modes.first().cloned();
+        let modes_count = modes.len() as u32;
+
+        // mevcut mod tespitini drm sysfs'ten yapmak çok zor; kullanıcı arayüzünde
+        // sadece desteklenen ilk (en yüksek) modu "tercih edilen" olarak gösteriyoruz.
+        let current_mode = if enabled { preferred_mode.clone() } else { None };
+
+        out.push(DisplayInfo {
+            connector: name,
+            status,
+            enabled,
+            current_mode,
+            modes_count,
+            preferred_mode,
+        });
+    }
+    out.sort_by(|a, b| a.connector.cmp(&b.connector));
+    out
 }
 
 fn collect_battery() -> Option<BatteryInfo> {
@@ -390,13 +454,27 @@ fn collect_network() -> Vec<NetworkInterface> {
     };
     for entry in entries.flatten() {
         let name = entry.file_name().to_string_lossy().to_string();
-        let mac = std::fs::read_to_string(entry.path().join("address"))
+        let p = entry.path();
+        let mac = std::fs::read_to_string(p.join("address"))
             .map(|s| s.trim().to_string())
             .unwrap_or_default();
-        let state = std::fs::read_to_string(entry.path().join("operstate"))
+        let state = std::fs::read_to_string(p.join("operstate"))
             .map(|s| s.trim().to_string())
             .unwrap_or_else(|_| "unknown".to_string());
-        let kind = classify_iface(&name, &entry.path());
+        let kind = classify_iface(&name, &p);
+
+        let read_u64 = |sub: &str| -> u64 {
+            std::fs::read_to_string(p.join("statistics").join(sub))
+                .ok()
+                .and_then(|s| s.trim().parse().ok())
+                .unwrap_or(0)
+        };
+        let speed_mbps = std::fs::read_to_string(p.join("speed"))
+            .ok()
+            .and_then(|s| s.trim().parse::<i64>().ok())
+            .filter(|n| *n > 0)
+            .map(|n| n as u64);
+
         out.push(NetworkInterface {
             name,
             mac,
@@ -404,6 +482,11 @@ fn collect_network() -> Vec<NetworkInterface> {
             ipv4: vec![],
             ipv6: vec![],
             kind,
+            rx_bytes:   read_u64("rx_bytes"),
+            tx_bytes:   read_u64("tx_bytes"),
+            rx_packets: read_u64("rx_packets"),
+            tx_packets: read_u64("tx_packets"),
+            speed_mbps,
         });
     }
     // ip adreslerini `ip -o addr` ile doldur

@@ -236,6 +236,30 @@ const MOCK = {
     },
     kernel_params_count: 1247,
     session_type: "wayland",
+    boot_analyze: {
+      total_ms: 12340,
+      firmware_ms: 3200,
+      loader_ms: 850,
+      kernel_ms: 1620,
+      initrd_ms: 2180,
+      userspace_ms: 4490,
+      target: "graphical",
+      target_ms: 4490,
+    },
+    top_cpu: [
+      { pid: 4421, name: "santral",     cpu_percent: 28.4, memory_bytes: 142 * 1024 ** 2 },
+      { pid: 1834, name: "firefox",     cpu_percent: 18.2, memory_bytes: 1240 * 1024 ** 2 },
+      { pid: 2911, name: "gnome-shell", cpu_percent: 6.8,  memory_bytes: 410 * 1024 ** 2 },
+      { pid: 2056, name: "wireplumber", cpu_percent: 2.3,  memory_bytes: 22 * 1024 ** 2 },
+      { pid: 1812, name: "Xwayland",    cpu_percent: 1.1,  memory_bytes: 64 * 1024 ** 2 },
+    ],
+    top_mem: [
+      { pid: 1834, name: "firefox",     cpu_percent: 18.2, memory_bytes: 1240 * 1024 ** 2 },
+      { pid: 4310, name: "code",        cpu_percent: 3.6,  memory_bytes: 720 * 1024 ** 2 },
+      { pid: 2911, name: "gnome-shell", cpu_percent: 6.8,  memory_bytes: 410 * 1024 ** 2 },
+      { pid: 4421, name: "santral",     cpu_percent: 28.4, memory_bytes: 142 * 1024 ** 2 },
+      { pid: 1812, name: "Xwayland",    cpu_percent: 1.1,  memory_bytes: 64 * 1024 ** 2 },
+    ],
   }),
   hardware_info: () => ({
     gpus: [
@@ -247,10 +271,14 @@ const MOCK = {
       { vendor: "Advanced Micro Devices", product: "Family 17h HD Audio Controller", raw: "" },
     ],
     network: [
-      { name: "lo",     mac: "00:00:00:00:00:00", state: "unknown", ipv4: ["127.0.0.1"], ipv6: ["::1"], kind: "loopback" },
-      { name: "enp4s0", mac: "a8:a1:59:c4:7d:e3", state: "up",      ipv4: ["192.168.1.42"], ipv6: ["fe80::aaa1:59ff:fec4:7de3"], kind: "ethernet" },
-      { name: "wlp3s0", mac: "9c:b6:d0:1f:42:8a", state: "down",    ipv4: [], ipv6: [], kind: "wifi" },
-      { name: "docker0",mac: "02:42:8a:1b:6c:5d", state: "down",    ipv4: ["172.17.0.1"], ipv6: [], kind: "virtual" },
+      { name: "lo",     mac: "00:00:00:00:00:00", state: "unknown", ipv4: ["127.0.0.1"], ipv6: ["::1"], kind: "loopback",
+        rx_bytes: 1.2 * 1024**2, tx_bytes: 1.2 * 1024**2, rx_packets: 8421, tx_packets: 8421, speed_mbps: null },
+      { name: "enp4s0", mac: "a8:a1:59:c4:7d:e3", state: "up",      ipv4: ["192.168.1.42"], ipv6: ["fe80::aaa1:59ff:fec4:7de3"], kind: "ethernet",
+        rx_bytes: 18.4 * 1024**3, tx_bytes: 6.2 * 1024**3, rx_packets: 4_120_223, tx_packets: 2_840_109, speed_mbps: 1000 },
+      { name: "wlp3s0", mac: "9c:b6:d0:1f:42:8a", state: "down",    ipv4: [], ipv6: [], kind: "wifi",
+        rx_bytes: 0, tx_bytes: 0, rx_packets: 0, tx_packets: 0, speed_mbps: null },
+      { name: "docker0",mac: "02:42:8a:1b:6c:5d", state: "down",    ipv4: ["172.17.0.1"], ipv6: [], kind: "virtual",
+        rx_bytes: 0, tx_bytes: 0, rx_packets: 0, tx_packets: 0, speed_mbps: null },
     ],
     bluetooth: {
       adapter_present: true,
@@ -301,6 +329,11 @@ const MOCK = {
       examples: ["amdgpu", "snd_hda_intel", "iwlwifi", "btusb", "nvme", "ext4", "kvm_amd", "rfkill"],
     },
     uefi: true,
+    displays: [
+      { connector: "card0-DP-1",   status: "connected",    enabled: true,  current_mode: "2560x1440", modes_count: 14, preferred_mode: "2560x1440" },
+      { connector: "card0-HDMI-A-1", status: "connected",  enabled: true,  current_mode: "1920x1080", modes_count: 22, preferred_mode: "1920x1080" },
+      { connector: "card0-DP-2",   status: "disconnected", enabled: false, current_mode: null,        modes_count: 0,  preferred_mode: null },
+    ],
   }),
 };
 

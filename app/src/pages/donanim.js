@@ -2,7 +2,7 @@
 
 import {
   card, pageHead, sectionHead,
-  esc,
+  esc, fmtBytes,
 } from "../util.js";
 
 export async function renderDonanim(host, { invoke }) {
@@ -32,6 +32,9 @@ export async function renderDonanim(host, { invoke }) {
 
     ${sectionHead("SES")}
     <div class="cards">${audioCards(hw.audio)}</div>
+
+    ${sectionHead("EKRAN · MONİTÖR")}
+    <div class="cards">${displayCards(hw.displays)}</div>
 
     ${sectionHead("AĞ")}
     <div class="cards">${networkCards(hw.network)}</div>
@@ -106,6 +109,34 @@ function networkCards(nets) {
         ["ipv4", (n.ipv4 || []).join(", ") || "—"],
         ["ipv6", (n.ipv6 || []).join(", ") || "—", "value-meh"],
         ["durum", n.state || "—", up ? "value-good" : (n.kind === "loopback" ? "" : "value-warn")],
+        ["hız",   n.speed_mbps != null ? `${n.speed_mbps} Mbps` : "—"],
+        ["indi (rx)",   fmtBytes(n.rx_bytes)],
+        ["yükledi (tx)", fmtBytes(n.tx_bytes)],
+      ],
+    });
+  }).join("");
+}
+
+function displayCards(displays) {
+  if (!displays || displays.length === 0) {
+    return `<div class="muted">ekran/monitor bilgisi okunamadı (/sys/class/drm yok).</div>`;
+  }
+  const connected = displays.filter(d => (d.status || "").toLowerCase() === "connected");
+  const visible = connected.length > 0 ? connected : displays;
+  return visible.map((d) => {
+    const conn = (d.status || "").toLowerCase() === "connected";
+    const color = !conn ? "#5a5a6a" : (d.enabled ? "#00f0ff" : "#ffd400");
+    const tag = `${conn ? "BAĞLI" : "BOŞTA"}${d.enabled ? " · AKTİF" : ""}`;
+    return card({
+      tag,
+      color,
+      title: d.current_mode || d.preferred_mode || (conn ? "BAĞLI" : "—"),
+      sub: d.connector,
+      rows: [
+        ["durum",          d.status || "—", conn ? "value-good" : "value-meh"],
+        ["etkin",          d.enabled ? "evet" : "hayır", d.enabled ? "value-good" : "value-meh"],
+        ["tercih edilen",  d.preferred_mode || "—"],
+        ["desteklenen mod", String(d.modes_count || 0)],
       ],
     });
   }).join("");

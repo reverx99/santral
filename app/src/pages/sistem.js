@@ -51,10 +51,17 @@ export async function renderSistem(host, { invoke }) {
       ${servicesCards(sys.services)}
     </div>
 
-    ${sectionHead("YEREL · KERNEL")}
+    ${sectionHead("YEREL · KERNEL · AÇILIŞ")}
     <div class="cards">
       ${localeCard(sys.locale, sys.session_type)}
       ${kernelParamsCard(sys.kernel_params_count)}
+      ${bootAnalyzeCard(sys.boot_analyze)}
+    </div>
+
+    ${sectionHead("EN ÇOK KAYNAK TÜKETEN SÜREÇLER")}
+    <div class="proc-grid">
+      ${processList("CPU", sys.top_cpu, "cpu_percent")}
+      ${processList("BELLEK", sys.top_mem, "memory_bytes")}
     </div>
   `;
 
@@ -298,4 +305,62 @@ function kernelParamsCard(n) {
     title: n != null ? Number(n).toLocaleString("tr-TR") : "—",
     sub: "tanımlı sysctl parametresi sayısı.",
   });
+}
+
+function bootAnalyzeCard(b) {
+  if (!b) {
+    return card({
+      tag: "AÇILIŞ SÜRESİ",
+      color: "#5a5a6a",
+      title: "—",
+      sub: "systemd-analyze yok ya da hata.",
+    });
+  }
+  const fmt = (ms) => ms == null ? "—" : (ms >= 1000 ? `${(ms / 1000).toFixed(2)} sn` : `${ms} ms`);
+  const total = b.total_ms || ((b.firmware_ms || 0) + (b.loader_ms || 0) + (b.kernel_ms || 0) + (b.initrd_ms || 0) + (b.userspace_ms || 0));
+  const color = total >= 30_000 ? "#ff4477" : total >= 15_000 ? "#ffd400" : "#66ff99";
+  return card({
+    tag: "AÇILIŞ SÜRESİ",
+    color,
+    title: fmt(total),
+    sub: b.target ? `${b.target}.target → ${fmt(b.target_ms)}` : "açılış süresi (toplam).",
+    rows: [
+      ["firmware", fmt(b.firmware_ms)],
+      ["loader",   fmt(b.loader_ms)],
+      ["kernel",   fmt(b.kernel_ms)],
+      ["initrd",   fmt(b.initrd_ms)],
+      ["userspace",fmt(b.userspace_ms)],
+    ],
+  });
+}
+
+function processList(label, list, key) {
+  const items = (list || []).filter(p => p && p.name);
+  if (items.length === 0) {
+    return `<div class="muted">süreç verisi yok.</div>`;
+  }
+  const isCpu = key === "cpu_percent";
+  const max = Math.max(1, ...items.map(p => Number(p[key]) || 0));
+  return `
+    <article class="card fade-in" style="--c:${isCpu ? "#ff0099" : "#00f0ff"}">
+      <div class="card-head"><span>${esc(label)} BAŞINA</span></div>
+      <div class="proc-list">
+        ${items.map((p) => {
+          const v = Number(p[key]) || 0;
+          const w = (v / max) * 100;
+          const value = isCpu ? `${v.toFixed(1)}%` : fmtBytes(v);
+          return `
+            <div class="proc-row">
+              <div class="proc-info">
+                <span class="proc-name">${esc(p.name)}</span>
+                <span class="proc-pid">pid ${p.pid}</span>
+              </div>
+              <div class="proc-bar"><span style="width:${w.toFixed(2)}%"></span></div>
+              <div class="proc-val">${value}</div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </article>
+  `;
 }

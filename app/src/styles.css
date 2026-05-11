@@ -1376,6 +1376,67 @@ button { font: inherit; cursor: pointer; }
   .repo-card-actions { flex-direction: row; }
 }
 
+/* ============== en çok kaynak tüketen süreçler ============== */
+
+.proc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 16px;
+}
+.proc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.proc-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+}
+.proc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.proc-name {
+  font-family: var(--f-mono);
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.proc-pid {
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  color: var(--fg-muted);
+  letter-spacing: 0.04em;
+}
+.proc-bar {
+  height: 4px;
+  background: var(--line);
+  position: relative;
+  overflow: hidden;
+}
+.proc-bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--c, var(--pink)), var(--cyan));
+  box-shadow: 0 0 8px var(--c, var(--pink));
+  transition: width 0.4s cubic-bezier(.2,.8,.2,1);
+}
+.proc-val {
+  font-family: var(--f-mono);
+  color: var(--c, var(--cyan));
+  text-shadow: 0 0 6px color-mix(in srgb, var(--c, var(--cyan)) 60%, transparent);
+  min-width: 80px;
+  text-align: right;
+  font-size: 13px;
+}
+
 /* ============== toast ============== */
 
 .toast-stack {
