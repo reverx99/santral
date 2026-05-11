@@ -23,6 +23,7 @@ export async function renderUygulamalar(host, { invoke }) {
     invoke,
     repoSearch: null,    // { query, native: [], flatpak: [], elapsed_ms }
     repoSearching: false,
+    searchId: 0,
   };
 
   host.innerHTML = `
@@ -137,17 +138,24 @@ function wire(host) {
 
 async function triggerRepoSearch(host) {
   const q = _state.query;
-  if (q.length < 2 || _state.repoSearching) return;
+  if (q.length < 2) return;
+  // race koruması: paralel arama sayacı; sonuç gelmeden başka bir arama
+  // tetiklenirse eski cevabı kabul etme.
+  const myId = ++_state.searchId;
   _state.repoSearching = true;
   paintRepoSection(host, { loading: true });
   try {
     const res = await _state.invoke("app_search", { query: q });
+    if (myId !== _state.searchId) return; // bayat cevap, yoksay
     _state.repoSearch = res;
   } catch (err) {
+    if (myId !== _state.searchId) return;
     _state.repoSearch = { query: q, native: [], flatpak: [], error: String(err?.message || err) };
   } finally {
-    _state.repoSearching = false;
-    paintRepoSection(host);
+    if (myId === _state.searchId) {
+      _state.repoSearching = false;
+      paintRepoSection(host);
+    }
   }
 }
 

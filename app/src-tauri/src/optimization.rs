@@ -3,6 +3,7 @@
 //! Salt-okunur — hiçbir şeyi silmez/temizlemez (sonraki turda polkit ile).
 //! Her kategori için boyut/sayı + önerilen komut + güvenlik etiketi döner.
 
+use crate::util::timed;
 use serde::Serialize;
 use std::path::PathBuf;
 use std::process::Command;
@@ -122,7 +123,7 @@ fn scan_native_cache(kind: &str) -> CleanupCategory {
 fn scan_journal() -> CleanupCategory {
     // journalctl --disk-usage çıktısı: "Archived and active journals take up 384.0M in the file system."
     let mut size = 0u64;
-    if let Ok(out) = Command::new("journalctl").arg("--disk-usage").output() {
+    if let Ok(out) = timed("journalctl", 8).arg("--disk-usage").output() {
         if out.status.success() {
             let text = String::from_utf8_lossy(&out.stdout).to_string();
             size = parse_size_from_journalctl(&text);
@@ -231,16 +232,14 @@ fn scan_autoremove(kind: &str) -> CleanupCategory {
         "dnf" => (
             // -C / --cacheonly: cache yeter, ağa gitme
             count_lines_filtered(
-                Command::new("dnf")
-                    .args(["repoquery", "--unneeded", "-q", "-C"])
-                    .env("LC_ALL", "C"),
+                timed("dnf", 30).args(["repoquery", "--unneeded", "-q", "-C"]),
                 |l| !l.is_empty() && !l.starts_with("Last metadata") && !l.starts_with("Warning"),
             ),
             "dnf autoremove -y",
         ),
         "pacman" => (
             count_lines_filtered(
-                Command::new("pacman").args(["-Qdtq"]),
+                timed("pacman", 15).args(["-Qdtq"]),
                 |l| !l.is_empty(),
             ),
             "pacman -Rns $(pacman -Qdtq)",
@@ -248,7 +247,7 @@ fn scan_autoremove(kind: &str) -> CleanupCategory {
         "zypper" => (
             // zypper -q packages --orphaned tablo verir; başlık + alt çizgi atlanmalı.
             count_lines_filtered(
-                Command::new("zypper").args(["-q", "packages", "--orphaned"]).env("LC_ALL", "C"),
+                timed("zypper", 30).args(["-q", "packages", "--orphaned"]),
                 |l| l.starts_with("i") || l.starts_with("v"),
             ),
             "zypper rm $(zypper -q packages --orphaned | awk '/^i/ {print $5}')",
@@ -273,11 +272,7 @@ fn scan_autoremove(kind: &str) -> CleanupCategory {
 /// `apt-get -s autoremove` simülasyonunu çalıştırıp "X to remove" sayısını okur.
 /// Yetki gerektirmez, hiçbir paketi gerçekten kaldırmaz.
 fn count_apt_autoremovable() -> Option<u64> {
-    let out = Command::new("apt-get")
-        .args(["-s", "autoremove"])
-        .env("LC_ALL", "C")
-        .output()
-        .ok()?;
+    let out = timed("apt-get", 30).args(["-s", "autoremove"]).output().ok()?;
     if !out.status.success() {
         return None;
     }
@@ -324,7 +319,7 @@ fn scan_flatpak_unused() -> CleanupCategory {
     }
     // dry run: hangi runtime'lar gereksiz?
     let count = count_lines_filtered(
-        Command::new("flatpak").args(["uninstall", "--unused", "--dry-run"]),
+        timed("flatpak", 15).args(["uninstall", "--unused", "--dry-run"]),
         |l| l.starts_with(' ') && l.contains('/'),
     );
     let n = count.unwrap_or(0);

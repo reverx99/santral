@@ -12,6 +12,7 @@ mod repo_search;
 mod repos;
 mod scanner;
 mod system;
+mod util;
 
 use serde::Serialize;
 

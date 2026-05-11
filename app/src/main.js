@@ -34,6 +34,7 @@ const $navBtns = Array.from(document.querySelectorAll(".nav-item"));
 
 let currentRoute = null;
 let refreshTimer = null;
+let navInFlight = false;
 
 const setStatus = (text, dotClass = "dot-cyan") => {
   $status.textContent = text;
@@ -63,9 +64,13 @@ const scheduleAutoRefresh = () => {
 
 async function navigate(route, opts = {}) {
   if (!ROUTES[route]) route = "sistem";
+  // race koruması: bir gezinme devam ediyorsa diğerini yutkun
+  if (navInFlight && !opts.silent) return;
   const same = route === currentRoute;
   currentRoute = route;
   setActiveNav(route);
+  navInFlight = true;
+  $navBtns.forEach((b) => { if (!b.disabled) b.dataset.tmpLock = "1"; b.disabled = true; });
   if (!opts.silent) {
     setStatus(`yükleniyor: ${ROUTES[route].label}…`, "dot-yellow");
   }
@@ -74,7 +79,7 @@ async function navigate(route, opts = {}) {
     $page.innerHTML = `
       <div class="loading">
         <span class="loader"></span>
-        <span>${ROUTES[route].label} yükleniyor…</span>
+        <span>${escapeHtml(ROUTES[route].label)} yükleniyor…</span>
       </div>
     `;
   }
@@ -89,14 +94,19 @@ async function navigate(route, opts = {}) {
     $page.innerHTML = `
       <div class="page-head">
         <div>
-          <div class="page-num">${ROUTES[route].num}</div>
-          <h1>${ROUTES[route].label}</h1>
+          <div class="page-num">${escapeHtml(ROUTES[route].num)}</div>
+          <h1>${escapeHtml(ROUTES[route].label)}</h1>
         </div>
       </div>
       <div class="err">hata: ${escapeHtml(String(err?.message || err))}</div>
     `;
     setStatus("hata", "dot-red");
     toast.error("Sayfa yüklenemedi", String(err?.message || err));
+  } finally {
+    navInFlight = false;
+    $navBtns.forEach((b) => {
+      if (b.dataset.tmpLock === "1") { b.disabled = false; delete b.dataset.tmpLock; }
+    });
   }
 }
 

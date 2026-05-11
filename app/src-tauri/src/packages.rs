@@ -4,8 +4,8 @@
 //!
 //! Salt-okunur — kurulum/aktivasyon yok (sonraki fazda polkit ile).
 
+use crate::util::timed;
 use serde::Serialize;
-use std::process::Command;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct PackageOverview {
@@ -84,7 +84,7 @@ fn detect_native_kind() -> String {
 }
 
 fn run_first_line(cmd: &str, args: &[&str]) -> Option<String> {
-    let out = Command::new(cmd).args(args).output().ok()?;
+    let out = timed(cmd, 5).args(args).output().ok()?;
     if !out.status.success() {
         return None;
     }
@@ -101,10 +101,10 @@ fn native_version(kind: &str) -> Option<String> {
 
 fn native_count(kind: &str) -> Option<u64> {
     let out = match kind {
-        "apt"    => Command::new("dpkg-query").args(["-f=.\n", "-W"]).output().ok()?,
-        "dnf"    => Command::new("rpm").args(["-qa"]).output().ok()?,
-        "pacman" => Command::new("pacman").args(["-Q"]).output().ok()?,
-        "zypper" => Command::new("rpm").args(["-qa"]).output().ok()?,
+        "apt"    => timed("dpkg-query", 15).args(["-f=.\n", "-W"]).output().ok()?,
+        "dnf"    => timed("rpm", 15).args(["-qa"]).output().ok()?,
+        "pacman" => timed("pacman", 10).args(["-Q"]).output().ok()?,
+        "zypper" => timed("rpm", 15).args(["-qa"]).output().ok()?,
         _ => return None,
     };
     if !out.status.success() {
@@ -151,10 +151,7 @@ fn collect_flatpak() -> FlatpakStatus {
 }
 
 fn list_flatpak_remotes() -> Vec<FlatpakRemote> {
-    let out = match Command::new("flatpak")
-        .args(["remotes", "--columns=name,url"])
-        .output()
-    {
+    let out = match timed("flatpak", 8).args(["remotes", "--columns=name,url"]).output() {
         Ok(o) if o.status.success() => o,
         _ => return vec![],
     };
@@ -176,10 +173,7 @@ fn list_flatpak_remotes() -> Vec<FlatpakRemote> {
 }
 
 fn flatpak_app_count() -> Option<u64> {
-    let out = Command::new("flatpak")
-        .args(["list", "--app", "--columns=application"])
-        .output()
-        .ok()?;
+    let out = timed("flatpak", 10).args(["list", "--app", "--columns=application"]).output().ok()?;
     if !out.status.success() {
         return None;
     }
@@ -197,7 +191,7 @@ fn collect_snap() -> SnapStatus {
         };
     }
     let version = run_first_line("snap", &["--version"]);
-    let service_active = Command::new("systemctl")
+    let service_active = timed("systemctl", 5)
         .args(["is-active", "snapd"])
         .output()
         .map(|o| o.status.success() && String::from_utf8_lossy(&o.stdout).trim() == "active")
@@ -212,7 +206,7 @@ fn collect_snap() -> SnapStatus {
 }
 
 fn snap_count() -> Option<u64> {
-    let out = Command::new("snap").args(["list"]).output().ok()?;
+    let out = timed("snap", 10).args(["list"]).output().ok()?;
     if !out.status.success() {
         return None;
     }

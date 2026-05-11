@@ -2,8 +2,8 @@
 //! Hepsi salt-okunur arama komutları; ağ erişimi olabilir (flatpak için
 //! ağ gerekir, dnf cache yeter, apt-cache offline).
 
+use crate::util::timed;
 use serde::Serialize;
-use std::process::Command;
 use std::time::Instant;
 
 #[derive(Serialize, Clone, Debug)]
@@ -80,9 +80,8 @@ fn cap(mut hits: Vec<SearchHit>) -> (Vec<SearchHit>, bool) {
 }
 
 fn search_apt(q: &str) -> (Vec<SearchHit>, bool) {
-    let Ok(out) = Command::new("apt-cache")
+    let Ok(out) = timed("apt-cache", 30)
         .args(["search", "--names-only", q])
-        .env("LC_ALL", "C")
         .output()
     else {
         return (vec![], false);
@@ -108,9 +107,8 @@ fn search_apt(q: &str) -> (Vec<SearchHit>, bool) {
 }
 
 fn search_dnf(q: &str) -> (Vec<SearchHit>, bool) {
-    let Ok(out) = Command::new("dnf")
+    let Ok(out) = timed("dnf", 30)
         .args(["search", "-q", "-C", q])
-        .env("LC_ALL", "C")
         .output()
     else {
         return (vec![], false);
@@ -144,7 +142,7 @@ fn search_dnf(q: &str) -> (Vec<SearchHit>, bool) {
 }
 
 fn search_pacman(q: &str) -> (Vec<SearchHit>, bool) {
-    let Ok(out) = Command::new("pacman").args(["-Ss", q]).output() else {
+    let Ok(out) = timed("pacman", 15).args(["-Ss", q]).output() else {
         return (vec![], false);
     };
     if !out.status.success() {
@@ -183,11 +181,7 @@ fn search_pacman(q: &str) -> (Vec<SearchHit>, bool) {
 }
 
 fn search_zypper(q: &str) -> (Vec<SearchHit>, bool) {
-    let Ok(out) = Command::new("zypper")
-        .args(["-q", "se", q])
-        .env("LC_ALL", "C")
-        .output()
-    else {
+    let Ok(out) = timed("zypper", 30).args(["-q", "se", q]).output() else {
         return (vec![], false);
     };
     if !out.status.success() {
@@ -220,9 +214,8 @@ fn search_flatpak(q: &str) -> (Vec<SearchHit>, bool) {
     if which::which("flatpak").is_err() {
         return (vec![], false);
     }
-    let Ok(out) = Command::new("flatpak")
+    let Ok(out) = timed("flatpak", 30)
         .args(["search", "--columns=application,name,description,remotes,version", q])
-        .env("LC_ALL", "C")
         .output()
     else {
         return (vec![], false);

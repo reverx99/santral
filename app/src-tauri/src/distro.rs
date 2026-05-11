@@ -1,9 +1,9 @@
 //! Distro tespiti: /etc/os-release okur, paket yöneticisini ve flatpak/snap'i
 //! sezer. Saf okuma — hiçbir şey kurmaz.
 
+use crate::util::timed;
 use serde::Serialize;
 use std::collections::HashMap;
-use std::process::Command;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct DistroInfo {
@@ -137,10 +137,10 @@ fn detect_package_manager(id: &str, id_like: &[String]) -> PackageManager {
 
 fn count_installed(kind: &str) -> Option<u64> {
     let out = match kind {
-        "apt"    => Command::new("dpkg-query").args(["-f=.\n", "-W"]).output().ok()?,
-        "dnf"    => Command::new("rpm").args(["-qa"]).output().ok()?,
-        "pacman" => Command::new("pacman").args(["-Q"]).output().ok()?,
-        "zypper" => Command::new("rpm").args(["-qa"]).output().ok()?,
+        "apt"    => timed("dpkg-query", 15).args(["-f=.\n", "-W"]).output().ok()?,
+        "dnf"    => timed("rpm", 15).args(["-qa"]).output().ok()?,
+        "pacman" => timed("pacman", 10).args(["-Q"]).output().ok()?,
+        "zypper" => timed("rpm", 15).args(["-qa"]).output().ok()?,
         _        => return None,
     };
     if !out.status.success() {
@@ -154,7 +154,7 @@ fn detect_tool(name: &str, version_args: &[&str]) -> Toolchain {
     if which::which(name).is_err() {
         return Toolchain { installed: false, version: None };
     }
-    let version = Command::new(name)
+    let version = timed(name, 5)
         .args(version_args)
         .output()
         .ok()

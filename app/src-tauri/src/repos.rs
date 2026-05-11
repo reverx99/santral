@@ -2,9 +2,9 @@
 //! repolarını ve flatpak uzak depolarını okur. Salt-okunur — etkinleştir/
 //! kaldır eylemleri sonraki turda polkit ile.
 
+use crate::util::timed;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct RepoList {
@@ -170,11 +170,11 @@ fn parse_repo_ini(path: &Path, kind: &str, out: &mut Vec<RepoEntry>) {
     for line in content.lines() {
         let trimmed = line.trim();
         if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with(';') { continue; }
-        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+        if let Some(section) = trimmed.strip_prefix('[').and_then(|s| s.strip_suffix(']')) {
             commit(current.take(), out);
             current = Some(RepoEntry {
                 kind: kind.into(),
-                id: trimmed[1..trimmed.len()-1].to_string(),
+                id: section.to_string(),
                 source_path: path.display().to_string(),
                 enabled: true,
                 ..Default::default()
@@ -206,8 +206,7 @@ fn collect_pacman() -> Vec<RepoEntry> {
         let trimmed = line.trim();
         let enabled = !trimmed.starts_with('#');
         let stripped = trimmed.trim_start_matches('#').trim();
-        if stripped.starts_with('[') && stripped.ends_with(']') {
-            let id = stripped[1..stripped.len()-1].to_string();
+        if let Some(id) = stripped.strip_prefix('[').and_then(|s| s.strip_suffix(']')).map(|s| s.to_string()) {
             if id.eq_ignore_ascii_case("options") { continue; }
             out.push(RepoEntry {
                 kind: "pacman".into(),
@@ -230,10 +229,7 @@ fn collect_flatpak() -> Vec<RepoEntry> {
     if which::which("flatpak").is_err() {
         return vec![];
     }
-    let out = match Command::new("flatpak")
-        .args(["remotes", "--columns=name,url,disabled"])
-        .output()
-    {
+    let out = match timed("flatpak", 8).args(["remotes", "--columns=name,url,disabled"]).output() {
         Ok(o) if o.status.success() => o,
         _ => return vec![],
     };

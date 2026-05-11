@@ -2,7 +2,6 @@
 //! Hepsi salt-okunur, yetki gerektirmez. Komutlar yoksa kibarca boş döner.
 
 use serde::Serialize;
-use std::process::Command;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct HardwareInfo {
@@ -254,9 +253,8 @@ fn collect_smart(device: &str) -> Option<SmartHealth> {
         return None;
     }
     let dev_path = format!("/dev/{device}");
-    let out = std::process::Command::new("smartctl")
+    let out = crate::util::timed("smartctl", 20)
         .args(["--json", "-a", &dev_path])
-        .env("LC_ALL", "C")
         .output()
         .ok()?;
     // smartctl exit code, bit-encoded — 0 = OK; 2 = open failed (usually perms)
@@ -543,7 +541,7 @@ fn collect_secure_boot() -> SecureBootInfo {
     }
 
     // önce mokutil dene
-    if let Ok(o) = std::process::Command::new("mokutil").arg("--sb-state").output() {
+    if let Ok(o) = crate::util::timed("mokutil", 5).arg("--sb-state").output() {
         if o.status.success() {
             let text = String::from_utf8_lossy(&o.stdout).to_string();
             if text.contains("SecureBoot enabled") {
@@ -593,7 +591,7 @@ fn collect_modules() -> ModulesInfo {
 
 /// `lspci -mm | grep -i CLASS` üzerinden PCI cihazlarını okur. Komut yoksa boş.
 fn collect_pci_class(class: &str) -> Vec<DeviceLine> {
-    let Ok(output) = Command::new("lspci").args(["-mm", "-nn"]).output() else {
+    let Ok(output) = crate::util::timed("lspci", 5).args(["-mm", "-nn"]).output() else {
         return vec![];
     };
     if !output.status.success() {
@@ -705,7 +703,7 @@ fn collect_network() -> Vec<NetworkInterface> {
         });
     }
     // ip adreslerini `ip -o addr` ile doldur
-    if let Ok(output) = Command::new("ip").args(["-o", "addr"]).output() {
+    if let Ok(output) = crate::util::timed("ip", 5).args(["-o", "addr"]).output() {
         if output.status.success() {
             for line in String::from_utf8_lossy(&output.stdout).lines() {
                 let parts: Vec<&str> = line.split_whitespace().collect();
@@ -774,7 +772,7 @@ fn collect_bluetooth() -> Bluetooth {
     }
 
     // bluetoothctl show (yetki gerektirmez)
-    if let Ok(out) = Command::new("bluetoothctl").arg("show").output() {
+    if let Ok(out) = crate::util::timed("bluetoothctl", 5).arg("show").output() {
         if out.status.success() {
             let text = String::from_utf8_lossy(&out.stdout).to_string();
             for line in text.lines() {
@@ -791,7 +789,7 @@ fn collect_bluetooth() -> Bluetooth {
     }
 
     // systemctl is-active bluetooth
-    if let Ok(out) = Command::new("systemctl").args(["is-active", "bluetooth"]).output() {
+    if let Ok(out) = crate::util::timed("systemctl", 5).args(["is-active", "bluetooth"]).output() {
         bt.service_active = out.status.success()
             && String::from_utf8_lossy(&out.stdout).trim() == "active";
     }
@@ -800,7 +798,7 @@ fn collect_bluetooth() -> Bluetooth {
 }
 
 fn collect_usb() -> Vec<DeviceLine> {
-    let Ok(output) = Command::new("lsusb").output() else {
+    let Ok(output) = crate::util::timed("lsusb", 5).output() else {
         return vec![];
     };
     if !output.status.success() {
@@ -849,7 +847,7 @@ fn collect_cpu_extra() -> CpuExtra {
 }
 
 fn detect_virtualization() -> Option<String> {
-    if let Ok(out) = Command::new("systemd-detect-virt").output() {
+    if let Ok(out) = crate::util::timed("systemd-detect-virt", 3).output() {
         if out.status.success() {
             let v = String::from_utf8_lossy(&out.stdout).trim().to_string();
             if !v.is_empty() && v != "none" {

@@ -233,10 +233,7 @@ fn collect_boot_analyze() -> Option<BootAnalyze> {
     if which::which("systemd-analyze").is_err() {
         return None;
     }
-    let out = std::process::Command::new("systemd-analyze")
-        .env("LC_ALL", "C")
-        .output()
-        .ok()?;
+    let out = crate::util::timed("systemd-analyze", 10).output().ok()?;
     if !out.status.success() {
         return None;
     }
@@ -354,7 +351,7 @@ fn collect_locale() -> LocaleInfo {
                 })
                 .unwrap_or_default()
         });
-    let local_time = std::process::Command::new("date")
+    let local_time = crate::util::timed("date", 3)
         .arg("+%Y-%m-%d %H:%M:%S %Z")
         .output()
         .ok()
@@ -370,7 +367,7 @@ fn collect_locale() -> LocaleInfo {
 }
 
 fn collect_services() -> ServicesInfo {
-    use std::process::Command;
+    use crate::util::timed;
     let mut info = ServicesInfo::default();
 
     // systemctl yoksa: boş döndür
@@ -379,9 +376,8 @@ fn collect_services() -> ServicesInfo {
     }
 
     // active / failed
-    if let Ok(out) = Command::new("systemctl")
+    if let Ok(out) = timed("systemctl", 10)
         .args(["list-units", "--type=service", "--all", "--no-legend", "--no-pager", "--plain"])
-        .env("LC_ALL", "C")
         .output()
     {
         if out.status.success() {
@@ -405,9 +401,8 @@ fn collect_services() -> ServicesInfo {
     }
 
     // enabled
-    if let Ok(out) = Command::new("systemctl")
+    if let Ok(out) = timed("systemctl", 10)
         .args(["list-unit-files", "--type=service", "--state=enabled", "--no-legend", "--no-pager"])
-        .env("LC_ALL", "C")
         .output()
     {
         if out.status.success() {
@@ -422,7 +417,7 @@ fn collect_services() -> ServicesInfo {
 }
 
 fn count_kernel_params() -> Option<u64> {
-    let out = std::process::Command::new("sysctl").arg("-a").output().ok()?;
+    let out = crate::util::timed("sysctl", 5).arg("-a").output().ok()?;
     if !out.status.success() {
         return None;
     }
