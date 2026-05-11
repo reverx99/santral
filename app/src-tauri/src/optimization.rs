@@ -263,14 +263,14 @@ fn scan_autoremove(kind: &str) -> CleanupCategory {
     }
 }
 
-fn count_lines(mut cmd: Command) -> Option<u64> {
+fn count_lines(cmd: &mut Command) -> Option<u64> {
     let out = cmd.output().ok()?;
     if !out.status.success() { return None; }
     let text = String::from_utf8_lossy(&out.stdout);
     Some(text.lines().filter(|l| !l.trim().is_empty()).count() as u64)
 }
 
-fn count_lines_filtered(mut cmd: Command, f: impl Fn(&str) -> bool) -> Option<u64> {
+fn count_lines_filtered(cmd: &mut Command, f: impl Fn(&str) -> bool) -> Option<u64> {
     let out = cmd.output().ok()?;
     if !out.status.success() { return None; }
     let text = String::from_utf8_lossy(&out.stdout);
@@ -295,11 +295,7 @@ fn scan_flatpak_unused() -> CleanupCategory {
     }
     // dry run: hangi runtime'lar gereksiz?
     let count = count_lines_filtered(
-        {
-            let mut c = Command::new("flatpak");
-            c.args(["uninstall", "--unused", "--dry-run"]);
-            c
-        },
+        Command::new("flatpak").args(["uninstall", "--unused", "--dry-run"]),
         |l| l.starts_with(' ') && l.contains('/'),
     );
     let n = count.unwrap_or(0);

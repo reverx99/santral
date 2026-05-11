@@ -162,7 +162,7 @@ fn collect_dnf_zypper(dir: &str, kind: &str) -> Vec<RepoEntry> {
 fn parse_repo_ini(path: &Path, kind: &str, out: &mut Vec<RepoEntry>) {
     let Ok(content) = std::fs::read_to_string(path) else { return; };
     let mut current: Option<RepoEntry> = None;
-    let mut commit = |cur: Option<RepoEntry>, out: &mut Vec<RepoEntry>| {
+    let commit = |cur: Option<RepoEntry>, out: &mut Vec<RepoEntry>| {
         if let Some(c) = cur {
             if !c.id.is_empty() { out.push(c); }
         }
