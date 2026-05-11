@@ -5,6 +5,7 @@
 // placeholder; gerçek polkit + komut akışı sonraki turda.
 
 import { pageHead, sectionHead, esc } from "../util.js";
+import { tasks } from "../tasks.js";
 
 const NATIVE_LABELS = {
   apt:    "APT (Debian / Ubuntu ailesi)",
@@ -44,6 +45,32 @@ export async function renderPaketler(host, { invoke }) {
   host.querySelector("#refresh")?.addEventListener("click", () => {
     if (host.__invoke) renderPaketler(host, { invoke: host.__invoke });
   });
+
+  // Öneri kartlarındaki aksiyon butonlarını wire et — id'ye göre kind/args eşleştir
+  host.querySelectorAll("[data-rec-id]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.recId;
+      const req = recAction(id);
+      if (!req) return;
+      try { await tasks.start(req); } catch {}
+    });
+  });
+}
+
+/** Öneri id'sini ActionRequest'e çevir. Backend allowlist'i tarafından
+ *  ayrıca doğrulanır — burası kullanıcıya gösterilen "ne yapılacak". */
+function recAction(id) {
+  switch (id) {
+    case "add-flathub":
+      return {
+        kind: "flatpak.user.remote-add",
+        args: ["flathub", "https://flathub.org/repo/flathub.flatpakrepo"],
+        label: "Flathub'ı kullanıcı remote olarak ekle",
+      };
+    // diğer öneriler (Flatpak'i kur, snapd'yi başlat) root gerektiriyor →
+    // Faz 7.2'de polkit + pkexec ile.
+    default: return null;
+  }
 }
 
 function nativeCard(n) {
@@ -206,13 +233,22 @@ function recCard(r) {
           </details>
         ` : ""}
       </div>
-      ${r.action_label ? `
-        <button class="btn install-btn pkg-action" disabled title="yakında — sonraki turda polkit ile">
-          ▶ ${esc(r.action_label)}
-        </button>
-      ` : ""}
+      ${r.action_label ? renderRecButton(r) : ""}
     </article>
   `;
+}
+
+function renderRecButton(r) {
+  // Bu fazda yalnızca non-root (flatpak --user) öneriler interaktif.
+  const wireable = r.id === "add-flathub";
+  if (wireable) {
+    return `<button class="btn install-btn pkg-action" data-rec-id="${esc(r.id)}">
+      ▶ ${esc(r.action_label)}
+    </button>`;
+  }
+  return `<button class="btn install-btn pkg-action" disabled title="Faz 7.2 — root yetkisi polkit ile">
+    ▶ ${esc(r.action_label)} <small>(root)</small>
+  </button>`;
 }
 
 function formatNum(n) {

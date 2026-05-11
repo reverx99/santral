@@ -123,6 +123,27 @@ function paint(host) {
       </div>
     </div>
 
+    ${sectionHead("Güvenlik")}
+    <div class="settings-grid">
+      <div class="setting" style="border-left: 3px solid ${s.dryRun ? "var(--green)" : "var(--red)"}">
+        <div class="setting-head">
+          <div class="setting-label">${s.dryRun ? "🛡️ Dry-run modu açık" : "⚠️ Gerçek çalışma modu"}</div>
+          <div class="setting-desc">
+            ${s.dryRun
+              ? `Tüm "kur/temizle/etkinleştir" eylemleri yalnızca <strong>simüle edilir</strong>. Komut sistemin üzerinde çalışmaz; bunun yerine "Çalıştırılacaktı: ..." log'u görürsün. Tavsiye edilen güvenli mod.`
+              : `Aksiyonlar <strong>gerçekten çalıştırılır</strong> — sistemde değişiklik yapar. Sadece ne yaptığını bildiğinde aç.`}
+          </div>
+        </div>
+        <div class="setting-control">
+          <label class="switch">
+            <input type="checkbox" id="opt-dryrun" ${s.dryRun ? "checked" : ""} />
+            <span class="switch-track"><span class="switch-thumb"></span></span>
+            <span class="switch-label">${s.dryRun ? "Açık (güvenli)" : "Kapalı (gerçek)"}</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
     ${sectionHead("Gizlilik")}
     <article class="card" style="--c:#66ff99; max-width: 720px;">
       <div class="card-head"><span>YEREL</span></div>
@@ -180,6 +201,30 @@ function wire(host) {
     paint(host);
     if (e.target.checked) {
       toast.success("Bildirimler açık", "Önemli olaylar bu köşede görünecek.");
+    }
+  });
+
+  // dry-run switch (güvenlik açma/kapama)
+  host.querySelector("#opt-dryrun")?.addEventListener("change", (e) => {
+    const enabling = e.target.checked;
+    if (!enabling) {
+      // gerçek mod'a geçiş — kullanıcıyı uyar
+      const ok = confirm(
+        "DİKKAT: Dry-run modunu kapatıyorsun. Bundan sonra 'kur / temizle' " +
+        "butonları sistemde gerçekten değişiklik yapacak. Devam etmek " +
+        "istediğine emin misin?"
+      );
+      if (!ok) {
+        e.target.checked = true;
+        return;
+      }
+    }
+    settings.set("dryRun", enabling);
+    paint(host);
+    if (enabling) {
+      toast.success("Dry-run açıldı", "Aksiyonlar bundan sonra yalnızca simüle edilir.");
+    } else {
+      toast.warn("Gerçek çalışma modu", "Aksiyonlar artık sistemini doğrudan etkileyebilir. Dikkatli ol.", { duration: 8000 });
     }
   });
 

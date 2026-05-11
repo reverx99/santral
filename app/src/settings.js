@@ -16,6 +16,9 @@ const DEFAULTS = {
   autoRefresh: 0,
   startupRoute: "sistem",
   notifications: true,
+  // Aksiyon güvenliği: varsayılan AÇIK. Komutlar simüle edilir, gerçekten
+  // çalışmaz. Kullanıcı Ayarlar'dan kapatırsa gerçek çalışma başlar.
+  dryRun: true,
 };
 
 class Settings {

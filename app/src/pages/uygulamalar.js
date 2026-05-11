@@ -2,6 +2,7 @@
 // "KUR" butonu şimdilik placeholder — kurulum mantığı sonraki turda (polkit + akış).
 
 import { pageHead, esc } from "../util.js";
+import { tasks } from "../tasks.js";
 
 const SOURCE_LABELS = {
   apt:     "APT",
@@ -172,6 +173,23 @@ function paint(host) {
   }
   empty.hidden = true;
   grid.innerHTML = apps.map(a => appCard(a, _state.cat)).join("");
+  wireFlatpakButtons(grid);
+}
+
+function wireFlatpakButtons(scope) {
+  scope.querySelectorAll("[data-flatpak-install]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const appid = btn.dataset.flatpakInstall;
+      const label = btn.dataset.label || appid;
+      try {
+        await tasks.start({
+          kind: "flatpak.user.install",
+          args: [appid],
+          label: `${label} (flatpak --user)`,
+        });
+      } catch {}
+    });
+  });
 }
 
 function paintRepoSection(host, opts = {}) {
@@ -230,6 +248,7 @@ function paintRepoSection(host, opts = {}) {
         <div class="repo-results-grid">${r.flatpak.map(repoHitCard).join("")}</div>
       </div>` : ""}
   `;
+  wireFlatpakButtons(sec);
 }
 
 function repoHitCard(h) {
@@ -240,6 +259,10 @@ function repoHitCard(h) {
   const color = colorByKind[h.source] || "#00f0ff";
   const title = h.label || h.name;
   const subtitle = h.label ? h.name : "";
+  // Faz 7.1: flatpak için canlı kurulum; root gerektirenler placeholder
+  const btn = h.source === "flatpak"
+    ? `<button class="btn install-btn repo-hit-install" data-flatpak-install="${esc(h.name)}" data-label="${esc(title)}">▶ KUR (--user)</button>`
+    : `<button class="btn install-btn repo-hit-install" disabled title="Faz 7.2 — root yetkisi polkit ile">▶ KUR <small>(root)</small></button>`;
   return `
     <article class="repo-hit fade-in" style="--c:${esc(color)}">
       <header class="repo-hit-head">
@@ -249,7 +272,7 @@ function repoHitCard(h) {
       <h5 class="repo-hit-title">${esc(title)}</h5>
       ${subtitle ? `<div class="repo-hit-id">${esc(subtitle)}</div>` : ""}
       ${h.summary ? `<p class="repo-hit-desc">${esc(h.summary)}</p>` : ""}
-      <button class="btn install-btn repo-hit-install" disabled title="yakında — Faz 7'de polkit ile">▶ KUR</button>
+      ${btn}
     </article>
   `;
 }
@@ -292,9 +315,15 @@ function appCard(app, cat) {
     ? `<a class="app-home" href="${esc(app.homepage)}" target="_blank" rel="noopener" title="${esc(app.homepage)}">↗</a>`
     : "";
 
-  const installBtn = canInstall
-    ? `<button class="btn install-btn" disabled title="yakında — sonraki fazda">▶ KUR</button>`
-    : `<button class="btn install-btn off" disabled title="bu sistemde kurulamıyor">× KAYNAK YOK</button>`;
+  // Sadece flatpak için (--user mode) Faz 7.1'de kurulum aktif.
+  // apt/dnf/pacman/zypper root gerektirir → Faz 7.2.
+  const flatpakId = app.sources.flatpak;
+  const canFlatpak = flatpakId && installable.includes("flatpak");
+  const installBtn = canFlatpak
+    ? `<button class="btn install-btn" data-flatpak-install="${esc(flatpakId)}" data-label="${esc(app.name)}">▶ FLATPAK ile KUR</button>`
+    : (canInstall
+        ? `<button class="btn install-btn" disabled title="Faz 7.2 — root yetkisi polkit ile">▶ KUR <small>(root)</small></button>`
+        : `<button class="btn install-btn off" disabled title="bu sistemde kurulamıyor">× KAYNAK YOK</button>`);
 
   return `
     <article class="app-card fade-in" style="--c:${esc(color)}">

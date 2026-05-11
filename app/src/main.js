@@ -1,9 +1,12 @@
 // santral — frontend bootstrap. Tauri komutlarını çağırır, sayfaları render eder.
 
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { settings } from "./settings.js";
 import { toast }    from "./toast.js";
 import { palette }  from "./palette.js";
+import { tasks }    from "./tasks.js";
+import { mountTaskDrawer } from "./task-drawer.js";
 
 import { renderSistem }       from "./pages/sistem.js";
 import { renderDonanim }      from "./pages/donanim.js";
@@ -194,6 +197,8 @@ const escapeHtml = (s) =>
   await showAppInfo();
   wireNav();
   buildPaletteItems();
+  mountTaskDrawer();
+  await tasks.init({ invoke, listen });
 
   // ayarlar değişince palette item etiketleri (notifications toggle) güncellensin
   settings.on(() => buildPaletteItems());

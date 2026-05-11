@@ -3,6 +3,7 @@
 //! Bu crate Tauri uygulamasının çekirdeğini barındırır. Frontend ile köprü
 //! kurulan komutlar burada `#[tauri::command]` olarak işaretlenir.
 
+mod action;
 mod catalog;
 mod distro;
 mod hardware;
@@ -94,6 +95,10 @@ pub fn run() {
             optimization_scan,
             repo_list,
             app_search,
+            action::start_action,
+            action::list_tasks,
+            action::clear_task,
+            action::clear_finished_tasks,
         ])
         .run(tauri::generate_context!())
         .expect("santral: tauri runtime failed");

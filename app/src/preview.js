@@ -13,6 +13,8 @@ import { renderHakkinda }     from "./pages/hakkinda.js";
 import { settings }           from "./settings.js";
 import { toast }              from "./toast.js";
 import { palette }            from "./palette.js";
+import { tasks }              from "./tasks.js";
+import { mountTaskDrawer }    from "./task-drawer.js";
 
 // settings yan etki: theme/font/zoom uygulansın
 settings.apply?.();
@@ -53,6 +55,53 @@ async function loadScanners() {
     preferred_source: "apt",
   };
   return SCAN_CACHE;
+}
+
+// preview için sahte task state (gerçek Tauri event'i yok)
+const PREVIEW_TASKS = new Map();
+let _previewTaskId = 1;
+
+async function fakeStartAction({ req, dryRun }) {
+  const id = _previewTaskId++;
+  const task = {
+    id, kind: req.kind, label: req.label || req.kind,
+    status: dryRun ? "succeeded" : "running",
+    command: `${req.kind} ${(req.args || []).join(" ")}`,
+    args: req.args || [], dry_run: !!dryRun,
+    started_at: Math.floor(Date.now() / 1000),
+    ended_at: dryRun ? Math.floor(Date.now() / 1000) : null,
+    exit_code: dryRun ? 0 : null,
+    log_count: 0, error: null,
+  };
+  PREVIEW_TASKS.set(id, task);
+  tasks.onTaskUpdate(task);
+  if (dryRun) {
+    tasks.onTaskLog({ task_id: id, level: "dry-run", text: `Çalıştırılacak komut: ${task.command}` });
+    task.log_count = 1;
+    return id;
+  }
+  // gerçek mod simülasyonu — birkaç log satırı yay, ardından succeeded
+  let i = 0;
+  const fakeLines = [
+    `Looking for matches…`,
+    `Required runtime for ${req.args?.[0] || "app"}: org.freedesktop.Platform/x86_64/23.08`,
+    `Receiving objects: 100% (12/12)`,
+    `Installation complete.`,
+  ];
+  const tick = () => {
+    if (i < fakeLines.length) {
+      tasks.onTaskLog({ task_id: id, level: "out", text: fakeLines[i++] });
+      task.log_count++;
+      setTimeout(tick, 350);
+    } else {
+      task.status = "succeeded";
+      task.ended_at = Math.floor(Date.now() / 1000);
+      task.exit_code = 0;
+      tasks.onTaskUpdate(task);
+    }
+  };
+  setTimeout(tick, 250);
+  return id;
 }
 
 const MOCK = {
@@ -421,6 +470,18 @@ const invoke = async (cmd, args) => {
   await new Promise((r) => setTimeout(r, delay));
   if (cmd === "app_catalog")  return await loadCatalog();
   if (cmd === "scan_catalog") return await loadScanners();
+  if (cmd === "start_action") return await fakeStartAction(args || {});
+  if (cmd === "list_tasks")   return Array.from(PREVIEW_TASKS.values());
+  if (cmd === "clear_task")   { PREVIEW_TASKS.delete(args?.id); return true; }
+  if (cmd === "clear_finished_tasks") {
+    let n = 0;
+    for (const [id, t] of Array.from(PREVIEW_TASKS)) {
+      if (["succeeded","failed","cancelled","rejected"].includes(t.status)) {
+        PREVIEW_TASKS.delete(id); n++;
+      }
+    }
+    return n;
+  }
   if (!MOCK[cmd]) throw new Error("unknown command: " + cmd);
   return MOCK[cmd](args || {});
 };
@@ -469,6 +530,10 @@ const navigate = async (route) => {
     console.error(err);
   }
 };
+
+// preview için task altyapısını mount et — listen yok, sadece invoke
+mountTaskDrawer();
+await tasks.init({ invoke });
 
 const info = await invoke("app_info");
 $tag.textContent = `v${info.version}`;
