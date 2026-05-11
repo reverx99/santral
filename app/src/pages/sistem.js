@@ -45,6 +45,17 @@ export async function renderSistem(host, { invoke }) {
     <div class="cards">
       ${disksCards(sys.disks)}
     </div>
+
+    ${sectionHead("SİSTEM SERVİSLERİ")}
+    <div class="cards">
+      ${servicesCards(sys.services)}
+    </div>
+
+    ${sectionHead("YEREL · KERNEL")}
+    <div class="cards">
+      ${localeCard(sys.locale, sys.session_type)}
+      ${kernelParamsCard(sys.kernel_params_count)}
+    </div>
   `;
 
   host.querySelector("#refresh")?.addEventListener("click", () => {
@@ -232,4 +243,59 @@ function disksCards(disks) {
       ],
     });
   }).join("");
+}
+
+function servicesCards(s) {
+  if (!s) return `<div class="muted">systemctl okunamadı.</div>`;
+  const total = s.active + s.inactive + s.failed;
+  if (total === 0) return `<div class="muted">systemd yok veya servis bulunamadı.</div>`;
+
+  const failedList = (s.failed_units || []).slice(0, 5);
+  const failed = card({
+    tag: "BAŞARISIZ",
+    color: s.failed > 0 ? "#ff4477" : "#66ff99",
+    title: String(s.failed),
+    sub: s.failed > 0
+      ? "failed durumdaki servisler — incelemeye değer."
+      : "tüm servisler temiz.",
+    rows: failedList.length ? failedList.map((u, i) => [`#${i + 1}`, u]) : null,
+  });
+
+  return [
+    card({
+      tag: "AKTİF",
+      color: "#66ff99",
+      title: String(s.active),
+      sub: "şu an çalışan systemd servisleri.",
+      rows: [
+        ["pasif", String(s.inactive), "value-meh"],
+        ["açılışta etkin", String(s.enabled)],
+        ["toplam", String(total)],
+      ],
+    }),
+    failed,
+  ].join("");
+}
+
+function localeCard(l, sessionType) {
+  if (!l) return "";
+  return card({
+    tag: "YEREL",
+    color: "#b400ff",
+    title: l.timezone || "—",
+    sub: l.local_time || "",
+    rows: [
+      ["dil (LANG)", l.lang || "—"],
+      ["oturum tipi", sessionType || "—"],
+    ],
+  });
+}
+
+function kernelParamsCard(n) {
+  return card({
+    tag: "KERNEL",
+    color: "#00f0ff",
+    title: n != null ? Number(n).toLocaleString("tr-TR") : "—",
+    sub: "tanımlı sysctl parametresi sayısı.",
+  });
 }

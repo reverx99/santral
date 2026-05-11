@@ -222,6 +222,20 @@ const MOCK = {
       { name: "sda1",      mount_point: "/mnt/data",  fs_type: "btrfs", total_bytes: 2  * 1024 ** 4, available_bytes: 1.4 * 1024 ** 4, used_bytes: 0.6 * 1024 ** 4, usage_percent: 30.0, removable: false },
     ],
     load_avg: { one: 0.42, five: 0.31, fifteen: 0.27 },
+    locale: {
+      lang: "tr_TR.UTF-8",
+      timezone: "Europe/Istanbul",
+      local_time: "2026-05-10 18:42:31 +03",
+    },
+    services: {
+      active: 142,
+      inactive: 38,
+      failed: 2,
+      enabled: 119,
+      failed_units: ["NetworkManager-wait-online.service", "fwupd-refresh.service"],
+    },
+    kernel_params_count: 1247,
+    session_type: "wayland",
   }),
   hardware_info: () => ({
     gpus: [
@@ -256,6 +270,37 @@ const MOCK = {
       flags_excerpt: ["AES", "AVX", "AVX2", "SHA_NI", "SVM"],
       microcode: "0xa201025",
     },
+    battery: {
+      name: "BAT0",
+      vendor: "LGC",
+      model: "01AV431",
+      capacity_percent: 78,
+      status: "Discharging",
+      design_capacity: 57000,
+      current_capacity: 48400,
+      health_percent: 85,
+      cycle_count: 312,
+      ac_online: false,
+    },
+    thermal: {
+      sensors: [
+        { label: "x86_pkg_temp",  temperature_c: 62.5, kind: "cpu" },
+        { label: "coretemp_core_0", temperature_c: 58.0, kind: "cpu" },
+        { label: "amdgpu", temperature_c: 71.0, kind: "gpu" },
+        { label: "nvme_composite", temperature_c: 44.0, kind: "nvme" },
+        { label: "acpitz", temperature_c: 51.0, kind: "acpi" },
+      ],
+      fans: [
+        { label: "thinkpad · fan1_input", rpm: 2840 },
+        { label: "amdgpu · fan1_input",   rpm: 1620 },
+      ],
+    },
+    secure_boot: { supported: true, enabled: true, source: "mokutil" },
+    modules: {
+      loaded: 184,
+      examples: ["amdgpu", "snd_hda_intel", "iwlwifi", "btusb", "nvme", "ext4", "kvm_amd", "rfkill"],
+    },
+    uefi: true,
   }),
 };
 

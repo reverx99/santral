@@ -17,6 +17,19 @@ export async function renderDonanim(host, { invoke }) {
     ${sectionHead("EKRAN KARTI")}
     <div class="cards">${gpuCards(hw.gpus)}</div>
 
+    ${sectionHead("ENERJİ · SICAKLIK")}
+    <div class="cards">
+      ${batteryCard(hw.battery, hw.thermal)}
+      ${thermalCard(hw.thermal)}
+      ${fanCard(hw.thermal)}
+    </div>
+
+    ${sectionHead("FIRMWARE · GÜVENLİK")}
+    <div class="cards">
+      ${secureBootCard(hw.secure_boot, hw.uefi)}
+      ${modulesCard(hw.modules)}
+    </div>
+
     ${sectionHead("SES")}
     <div class="cards">${audioCards(hw.audio)}</div>
 
@@ -155,6 +168,111 @@ function cpuExtraCard(extra) {
       ["sanallaşt.", extra.virtualization || "yok"],
     ],
   });
+}
+
+function batteryCard(b, thermal) {
+  if (!b) {
+    return `<article class="card fade-in" style="--c:#5a5a6a">
+      <div class="card-head"><span>BATARYA</span></div>
+      <h3 class="card-title" style="font-size:22px">YOK</h3>
+      <div class="card-sub">masaüstü makinesi gibi görünüyor; batarya tespit edilmedi.</div>
+    </article>`;
+  }
+  const pct = Number(b.capacity_percent || 0);
+  const charging = (b.status || "").toLowerCase().startsWith("charg") || b.ac_online;
+  const color = pct >= 50 ? "#66ff99" : pct >= 20 ? "#ffd400" : "#ff4477";
+  const fmtMwh = (n) => n == null ? "—" : `${(Number(n) / 1000).toFixed(1)} Wh`;
+  return `<article class="card fade-in" style="--c:${color}">
+    <div class="card-head"><span>BATARYA</span></div>
+    <h3 class="card-title">${pct}%</h3>
+    <div class="card-sub">${b.status || "—"}${charging ? "  ·  ⚡ AC takılı" : ""}</div>
+    ${`<div class="bar" style="--c:${color}"><span style="width:${pct}%"></span></div>`}
+    <div class="card-rows">
+      <div class="card-row"><span>sağlık</span><span class="${b.health_percent != null && b.health_percent < 70 ? "value-warn" : "value-good"}">${b.health_percent != null ? b.health_percent + "%" : "—"}</span></div>
+      <div class="card-row"><span>çevrim sayısı</span><span>${b.cycle_count != null ? b.cycle_count : "—"}</span></div>
+      <div class="card-row"><span>tasarım kapasite</span><span>${fmtMwh(b.design_capacity)}</span></div>
+      <div class="card-row"><span>mevcut kapasite</span><span>${fmtMwh(b.current_capacity)}</span></div>
+      <div class="card-row"><span>üretici / model</span><span>${(b.vendor || "—") + (b.model ? " / " + b.model : "")}</span></div>
+    </div>
+  </article>`;
+}
+
+function thermalCard(t) {
+  const sensors = (t?.sensors || []).filter(s => s.temperature_c != null);
+  if (!sensors.length) {
+    return `<article class="card fade-in" style="--c:#5a5a6a">
+      <div class="card-head"><span>SICAKLIK</span></div>
+      <h3 class="card-title" style="font-size:22px">YOK</h3>
+      <div class="card-sub">sensor okunamadı (thermal_zone yok veya lm-sensors kurulu değil).</div>
+    </article>`;
+  }
+  const hottest = sensors.reduce((a, b) => b.temperature_c > a.temperature_c ? b : a, sensors[0]);
+  const color = hottest.temperature_c >= 85 ? "#ff4477" : hottest.temperature_c >= 70 ? "#ffd400" : "#00f0ff";
+  return `<article class="card fade-in" style="--c:${color}">
+    <div class="card-head"><span>SICAKLIK</span></div>
+    <h3 class="card-title">${hottest.temperature_c.toFixed(1)}°C</h3>
+    <div class="card-sub">en sıcak sensor: ${esc(hottest.label)} (${esc(hottest.kind)})</div>
+    <div class="card-rows">
+      ${sensors.slice(0, 6).map(s => `
+        <div class="card-row"><span>${esc(s.label)}</span><span>${s.temperature_c.toFixed(1)}°C</span></div>
+      `).join("")}
+    </div>
+  </article>`;
+}
+
+function fanCard(t) {
+  const fans = t?.fans || [];
+  if (!fans.length) {
+    return `<article class="card fade-in" style="--c:#5a5a6a">
+      <div class="card-head"><span>FANLAR</span></div>
+      <h3 class="card-title" style="font-size:22px">YOK</h3>
+      <div class="card-sub">fan sensor okunamadı.</div>
+    </article>`;
+  }
+  return `<article class="card fade-in" style="--c:#b400ff">
+    <div class="card-head"><span>FANLAR</span></div>
+    <h3 class="card-title">${fans.length}</h3>
+    <div class="card-sub">aktif fan sayısı</div>
+    <div class="card-rows">
+      ${fans.slice(0, 6).map(f => `
+        <div class="card-row"><span>${esc(f.label)}</span><span>${f.rpm} RPM</span></div>
+      `).join("")}
+    </div>
+  </article>`;
+}
+
+function secureBootCard(sb, uefi) {
+  if (!uefi) {
+    return `<article class="card fade-in" style="--c:#5a5a6a">
+      <div class="card-head"><span>SECURE BOOT</span></div>
+      <h3 class="card-title" style="font-size:22px">BIOS</h3>
+      <div class="card-sub">sistem UEFI değil — Secure Boot uygulanmaz.</div>
+    </article>`;
+  }
+  const enabled = sb?.enabled === true;
+  const known = sb?.enabled === true || sb?.enabled === false;
+  const color = !known ? "#5a5a6a" : enabled ? "#66ff99" : "#ffd400";
+  return `<article class="card fade-in" style="--c:${color}">
+    <div class="card-head"><span>SECURE BOOT</span></div>
+    <h3 class="card-title">${!known ? "BİLİNMİYOR" : enabled ? "AÇIK" : "KAPALI"}</h3>
+    <div class="card-sub">UEFI sistem ${enabled ? "imzalı önyükleme zorluyor" : "imza kontrolü yapmıyor"}.</div>
+    <div class="card-rows">
+      <div class="card-row"><span>tespit kaynağı</span><span>${esc(sb?.source || "—")}</span></div>
+      <div class="card-row"><span>UEFI desteği</span><span class="value-good">var</span></div>
+    </div>
+  </article>`;
+}
+
+function modulesCard(m) {
+  if (!m) return "";
+  const examples = (m.examples || []).slice(0, 6)
+    .map(name => `<span class="chip info">${esc(name)}</span>`).join(" ");
+  return `<article class="card fade-in" style="--c:#ffd400">
+    <div class="card-head"><span>KERNEL MODÜLLERİ</span></div>
+    <h3 class="card-title">${Number(m.loaded || 0).toLocaleString("tr-TR")}</h3>
+    <div class="card-sub">yüklü modül sayısı (lsmod).</div>
+    ${examples ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${examples}</div>` : ""}
+  </article>`;
 }
 
 function usbList(usb) {

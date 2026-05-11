@@ -19,6 +19,26 @@ pub struct SystemInfo {
     pub swap: SwapInfo,
     pub disks: Vec<DiskInfo>,
     pub load_avg: LoadAvg,
+    pub locale: LocaleInfo,
+    pub services: ServicesInfo,
+    pub kernel_params_count: Option<u64>,
+    pub session_type: String,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+pub struct LocaleInfo {
+    pub lang: String,
+    pub timezone: String,
+    pub local_time: String,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+pub struct ServicesInfo {
+    pub active: u64,
+    pub inactive: u64,
+    pub failed: u64,
+    pub enabled: u64,
+    pub failed_units: Vec<String>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -151,7 +171,108 @@ pub fn collect() -> SystemInfo {
         },
         disks,
         load_avg: LoadAvg { one: la.one, five: la.five, fifteen: la.fifteen },
+        locale: collect_locale(),
+        services: collect_services(),
+        kernel_params_count: count_kernel_params(),
+        session_type: std::env::var("XDG_SESSION_TYPE").unwrap_or_default(),
     }
+}
+
+fn collect_locale() -> LocaleInfo {
+    let lang = std::env::var("LANG")
+        .or_else(|_| std::env::var("LC_ALL"))
+        .unwrap_or_default();
+    let timezone = std::fs::read_to_string("/etc/timezone")
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|_| {
+            // Çoğu modern dağıtım /etc/timezone'u tutmaz; /etc/localtime sembolik link'i okur
+            std::fs::read_link("/etc/localtime")
+                .ok()
+                .and_then(|p| {
+                    let s = p.to_string_lossy().to_string();
+                    // .../zoneinfo/Europe/Istanbul → Europe/Istanbul
+                    s.split("zoneinfo/").nth(1).map(|x| x.to_string())
+                })
+                .unwrap_or_default()
+        });
+    let local_time = std::process::Command::new("date")
+        .arg("+%Y-%m-%d %H:%M:%S %Z")
+        .output()
+        .ok()
+        .and_then(|o| {
+            if o.status.success() {
+                Some(String::from_utf8_lossy(&o.stdout).trim().to_string())
+            } else {
+                None
+            }
+        })
+        .unwrap_or_default();
+    LocaleInfo { lang, timezone, local_time }
+}
+
+fn collect_services() -> ServicesInfo {
+    use std::process::Command;
+    let mut info = ServicesInfo::default();
+
+    // systemctl yoksa: boş döndür
+    if which::which("systemctl").is_err() {
+        return info;
+    }
+
+    // active / failed
+    if let Ok(out) = Command::new("systemctl")
+        .args(["list-units", "--type=service", "--all", "--no-legend", "--no-pager", "--plain"])
+        .env("LC_ALL", "C")
+        .output()
+    {
+        if out.status.success() {
+            for line in String::from_utf8_lossy(&out.stdout).lines() {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                // unit  load  active  sub  description
+                if parts.len() < 4 { continue; }
+                let active = parts[2];
+                match active {
+                    "active"    => info.active += 1,
+                    "failed"    => {
+                        info.failed += 1;
+                        if info.failed_units.len() < 8 {
+                            info.failed_units.push(parts[0].to_string());
+                        }
+                    },
+                    _           => info.inactive += 1,
+                }
+            }
+        }
+    }
+
+    // enabled
+    if let Ok(out) = Command::new("systemctl")
+        .args(["list-unit-files", "--type=service", "--state=enabled", "--no-legend", "--no-pager"])
+        .env("LC_ALL", "C")
+        .output()
+    {
+        if out.status.success() {
+            info.enabled = String::from_utf8_lossy(&out.stdout)
+                .lines()
+                .filter(|l| !l.trim().is_empty())
+                .count() as u64;
+        }
+    }
+
+    info
+}
+
+fn count_kernel_params() -> Option<u64> {
+    let out = std::process::Command::new("sysctl").arg("-a").output().ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    Some(
+        String::from_utf8_lossy(&out.stdout)
+            .lines()
+            .filter(|l| !l.trim().is_empty() && l.contains('='))
+            .count() as u64,
+    )
 }
 
 fn pct(num: u64, denom: u64) -> f32 {

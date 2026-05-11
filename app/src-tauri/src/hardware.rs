@@ -12,6 +12,57 @@ pub struct HardwareInfo {
     pub bluetooth: Bluetooth,
     pub usb: Vec<DeviceLine>,
     pub cpu_extra: CpuExtra,
+    pub battery: Option<BatteryInfo>,
+    pub thermal: ThermalInfo,
+    pub secure_boot: SecureBootInfo,
+    pub modules: ModulesInfo,
+    pub uefi: bool,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct BatteryInfo {
+    pub name: String,
+    pub vendor: Option<String>,
+    pub model: Option<String>,
+    pub capacity_percent: Option<u32>,        // şu anki şarj %
+    pub status: String,                       // Charging / Discharging / Full / Unknown
+    pub design_capacity: Option<u64>,         // mWh
+    pub current_capacity: Option<u64>,        // mWh
+    pub health_percent: Option<u32>,          // current/design
+    pub cycle_count: Option<u32>,
+    pub ac_online: bool,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+pub struct ThermalInfo {
+    pub sensors: Vec<ThermalSensor>,
+    pub fans: Vec<FanSensor>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct ThermalSensor {
+    pub label: String,
+    pub temperature_c: f32,
+    pub kind: String, // cpu / gpu / acpi / other
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct FanSensor {
+    pub label: String,
+    pub rpm: u32,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+pub struct SecureBootInfo {
+    pub supported: bool,    // UEFI mi (efivars var mı)
+    pub enabled: Option<bool>,
+    pub source: String,     // "mokutil" | "efivars" | ""
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+pub struct ModulesInfo {
+    pub loaded: u64,
+    pub examples: Vec<String>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -59,7 +110,192 @@ pub fn collect() -> HardwareInfo {
         bluetooth: collect_bluetooth(),
         usb: collect_usb(),
         cpu_extra: collect_cpu_extra(),
+        battery: collect_battery(),
+        thermal: collect_thermal(),
+        secure_boot: collect_secure_boot(),
+        modules: collect_modules(),
+        uefi: std::path::Path::new("/sys/firmware/efi").exists(),
     }
+}
+
+fn collect_battery() -> Option<BatteryInfo> {
+    let entries = std::fs::read_dir("/sys/class/power_supply").ok()?;
+    let mut ac_online = false;
+    let mut bat_path: Option<std::path::PathBuf> = None;
+
+    for e in entries.flatten() {
+        let p = e.path();
+        let kind = std::fs::read_to_string(p.join("type"))
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        match kind.as_str() {
+            "Battery" => {
+                if bat_path.is_none() {
+                    bat_path = Some(p);
+                }
+            }
+            "Mains" | "USB" | "AC" => {
+                if let Ok(on) = std::fs::read_to_string(p.join("online")) {
+                    if on.trim() == "1" {
+                        ac_online = true;
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let bat_path = bat_path?;
+    let read = |f: &str| std::fs::read_to_string(bat_path.join(f)).ok().map(|s| s.trim().to_string());
+
+    let capacity_percent: Option<u32> = read("capacity").and_then(|s| s.parse().ok());
+    let status = read("status").unwrap_or_else(|| "Unknown".to_string());
+    let design_capacity: Option<u64> = read("energy_full_design").and_then(|s| s.parse().ok())
+        .or_else(|| read("charge_full_design").and_then(|s| s.parse().ok()));
+    let current_capacity: Option<u64> = read("energy_full").and_then(|s| s.parse().ok())
+        .or_else(|| read("charge_full").and_then(|s| s.parse().ok()));
+    let health_percent = match (design_capacity, current_capacity) {
+        (Some(d), Some(c)) if d > 0 => Some(((c as f64) / (d as f64) * 100.0).round() as u32),
+        _ => None,
+    };
+    let cycle_count: Option<u32> = read("cycle_count").and_then(|s| s.parse().ok());
+    let vendor = read("manufacturer");
+    let model = read("model_name");
+    let name = bat_path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+
+    Some(BatteryInfo {
+        name, vendor, model,
+        capacity_percent, status,
+        design_capacity, current_capacity,
+        health_percent, cycle_count,
+        ac_online,
+    })
+}
+
+fn collect_thermal() -> ThermalInfo {
+    let mut out = ThermalInfo::default();
+    // /sys/class/thermal/thermal_zone*: type + temp (milli-Celsius)
+    if let Ok(entries) = std::fs::read_dir("/sys/class/thermal") {
+        for e in entries.flatten() {
+            let p = e.path();
+            let name = e.file_name().to_string_lossy().to_string();
+            if !name.starts_with("thermal_zone") {
+                continue;
+            }
+            let kind = std::fs::read_to_string(p.join("type")).unwrap_or_default().trim().to_string();
+            let temp_raw = std::fs::read_to_string(p.join("temp")).ok()
+                .and_then(|s| s.trim().parse::<i64>().ok());
+            if let Some(milli) = temp_raw {
+                let c = milli as f32 / 1000.0;
+                if c.is_finite() && c > -50.0 && c < 200.0 {
+                    let categorized = categorize_thermal(&kind);
+                    out.sensors.push(ThermalSensor {
+                        label: kind,
+                        temperature_c: c,
+                        kind: categorized,
+                    });
+                }
+            }
+        }
+    }
+
+    // /sys/class/hwmon/hwmon*/fanN_input — RPM
+    if let Ok(entries) = std::fs::read_dir("/sys/class/hwmon") {
+        for e in entries.flatten() {
+            let p = e.path();
+            let hwname = std::fs::read_to_string(p.join("name")).unwrap_or_default().trim().to_string();
+            if let Ok(files) = std::fs::read_dir(&p) {
+                for f in files.flatten() {
+                    let fname = f.file_name().to_string_lossy().to_string();
+                    if !(fname.starts_with("fan") && fname.ends_with("_input")) {
+                        continue;
+                    }
+                    if let Ok(text) = std::fs::read_to_string(f.path()) {
+                        if let Ok(rpm) = text.trim().parse::<u32>() {
+                            if rpm > 0 {
+                                let label = if hwname.is_empty() { fname.clone() } else { format!("{hwname} · {fname}") };
+                                out.fans.push(FanSensor { label, rpm });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    out
+}
+
+fn categorize_thermal(label: &str) -> String {
+    let l = label.to_ascii_lowercase();
+    if l.contains("x86_pkg") || l.contains("coretemp") || l.contains("cpu") {
+        "cpu".to_string()
+    } else if l.contains("gpu") || l.contains("amdgpu") || l.contains("nv") {
+        "gpu".to_string()
+    } else if l.contains("acpi") {
+        "acpi".to_string()
+    } else if l.contains("nvme") {
+        "nvme".to_string()
+    } else {
+        "other".to_string()
+    }
+}
+
+fn collect_secure_boot() -> SecureBootInfo {
+    let mut out = SecureBootInfo::default();
+    out.supported = std::path::Path::new("/sys/firmware/efi").exists();
+    if !out.supported {
+        return out;
+    }
+
+    // önce mokutil dene
+    if let Ok(o) = std::process::Command::new("mokutil").arg("--sb-state").output() {
+        if o.status.success() {
+            let text = String::from_utf8_lossy(&o.stdout).to_string();
+            if text.contains("SecureBoot enabled") {
+                out.enabled = Some(true);
+                out.source = "mokutil".into();
+                return out;
+            } else if text.contains("SecureBoot disabled") {
+                out.enabled = Some(false);
+                out.source = "mokutil".into();
+                return out;
+            }
+        }
+    }
+
+    // efivars üzerinden son byte'a bak
+    let efivars_dir = "/sys/firmware/efi/efivars";
+    if let Ok(entries) = std::fs::read_dir(efivars_dir) {
+        for e in entries.flatten() {
+            let name = e.file_name().to_string_lossy().to_string();
+            if name.starts_with("SecureBoot-") {
+                if let Ok(bytes) = std::fs::read(e.path()) {
+                    // 4-byte attribute header, ardından 1 byte değer
+                    if bytes.len() >= 5 {
+                        out.enabled = Some(bytes[4] == 1);
+                        out.source = "efivars".into();
+                    }
+                }
+                break;
+            }
+        }
+    }
+    out
+}
+
+fn collect_modules() -> ModulesInfo {
+    let mut out = ModulesInfo::default();
+    let proc_modules = std::fs::read_to_string("/proc/modules").unwrap_or_default();
+    let mut names: Vec<String> = proc_modules
+        .lines()
+        .filter_map(|l| l.split_whitespace().next().map(|s| s.to_string()))
+        .collect();
+    out.loaded = names.len() as u64;
+    names.sort();
+    out.examples = names.into_iter().take(8).collect();
+    out
 }
 
 /// `lspci -mm | grep -i CLASS` üzerinden PCI cihazlarını okur. Komut yoksa boş.
