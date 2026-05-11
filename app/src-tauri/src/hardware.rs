@@ -151,14 +151,28 @@ fn collect_battery() -> Option<BatteryInfo> {
 
     let capacity_percent: Option<u32> = read("capacity").and_then(|s| s.parse().ok());
     let status = read("status").unwrap_or_else(|| "Unknown".to_string());
-    let design_capacity: Option<u64> = read("energy_full_design").and_then(|s| s.parse().ok())
-        .or_else(|| read("charge_full_design").and_then(|s| s.parse().ok()));
-    let current_capacity: Option<u64> = read("energy_full").and_then(|s| s.parse().ok())
-        .or_else(|| read("charge_full").and_then(|s| s.parse().ok()));
-    let health_percent = match (design_capacity, current_capacity) {
+
+    // BIRIM: energy_* µWh, charge_* µAh. ASLA karıştırma — sağlık yüzdesi
+    // sadece aynı pair'den hesaplanmalı. UI sadece mWh (energy) görüntüler;
+    // charge varsa health hesabı yapılır ama capacity_* alanları None bırakılır.
+    let energy_d: Option<u64> = read("energy_full_design").and_then(|s| s.parse().ok());
+    let energy_c: Option<u64> = read("energy_full").and_then(|s| s.parse().ok());
+    let charge_d: Option<u64> = read("charge_full_design").and_then(|s| s.parse().ok());
+    let charge_c: Option<u64> = read("charge_full").and_then(|s| s.parse().ok());
+
+    let health_percent = match (energy_d, energy_c) {
         (Some(d), Some(c)) if d > 0 => Some(((c as f64) / (d as f64) * 100.0).round() as u32),
-        _ => None,
+        _ => match (charge_d, charge_c) {
+            (Some(d), Some(c)) if d > 0 => Some(((c as f64) / (d as f64) * 100.0).round() as u32),
+            _ => None,
+        },
     };
+
+    // sadece energy_* alanlarını dışarı veriyoruz (µWh — frontend /1000 ile mWh, /1000000 ile Wh çevirebilir).
+    // Bizdeki yapı zaten mWh ölçüsünde gösteriyor: değerleri /1000 yaparak mWh'ye getiriyoruz.
+    let design_capacity = energy_d.map(|v| v / 1000);
+    let current_capacity = energy_c.map(|v| v / 1000);
+
     let cycle_count: Option<u32> = read("cycle_count").and_then(|s| s.parse().ok());
     let vendor = read("manufacturer");
     let model = read("model_name");

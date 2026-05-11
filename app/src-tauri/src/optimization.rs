@@ -225,13 +225,16 @@ fn scan_tmp() -> CleanupCategory {
 fn scan_autoremove(kind: &str) -> CleanupCategory {
     let (count, cmd) = match kind {
         "apt" => (
-            count_lines(Command::new("apt").args(["list", "--installed"]).env("LC_ALL", "C")),
+            count_apt_autoremovable(),
             "apt-get autoremove --purge -y",
         ),
         "dnf" => (
+            // -C / --cacheonly: cache yeter, ağa gitme
             count_lines_filtered(
-                Command::new("dnf").args(["repoquery", "--unneeded", "-q"]).env("LC_ALL", "C"),
-                |l| !l.is_empty() && !l.starts_with("Last metadata"),
+                Command::new("dnf")
+                    .args(["repoquery", "--unneeded", "-q", "-C"])
+                    .env("LC_ALL", "C"),
+                |l| !l.is_empty() && !l.starts_with("Last metadata") && !l.starts_with("Warning"),
             ),
             "dnf autoremove -y",
         ),
@@ -243,8 +246,12 @@ fn scan_autoremove(kind: &str) -> CleanupCategory {
             "pacman -Rns $(pacman -Qdtq)",
         ),
         "zypper" => (
-            None,
-            "zypper packages --orphaned",
+            // zypper -q packages --orphaned tablo verir; başlık + alt çizgi atlanmalı.
+            count_lines_filtered(
+                Command::new("zypper").args(["-q", "packages", "--orphaned"]).env("LC_ALL", "C"),
+                |l| l.starts_with("i") || l.starts_with("v"),
+            ),
+            "zypper rm $(zypper -q packages --orphaned | awk '/^i/ {print $5}')",
         ),
         _ => (None, "# bilinmeyen paket yöneticisi"),
     };
@@ -263,11 +270,33 @@ fn scan_autoremove(kind: &str) -> CleanupCategory {
     }
 }
 
-fn count_lines(cmd: &mut Command) -> Option<u64> {
-    let out = cmd.output().ok()?;
-    if !out.status.success() { return None; }
+/// `apt-get -s autoremove` simülasyonunu çalıştırıp "X to remove" sayısını okur.
+/// Yetki gerektirmez, hiçbir paketi gerçekten kaldırmaz.
+fn count_apt_autoremovable() -> Option<u64> {
+    let out = Command::new("apt-get")
+        .args(["-s", "autoremove"])
+        .env("LC_ALL", "C")
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
     let text = String::from_utf8_lossy(&out.stdout);
-    Some(text.lines().filter(|l| !l.trim().is_empty()).count() as u64)
+    for line in text.lines() {
+        // örnek: "0 upgraded, 0 newly installed, 14 to remove and 0 not upgraded."
+        if !line.contains("to remove") {
+            continue;
+        }
+        let words: Vec<&str> = line.split_whitespace().collect();
+        for (i, w) in words.iter().enumerate() {
+            if *w == "to" && words.get(i + 1) == Some(&"remove") && i > 0 {
+                if let Ok(n) = words[i - 1].parse::<u64>() {
+                    return Some(n);
+                }
+            }
+        }
+    }
+    Some(0)
 }
 
 fn count_lines_filtered(cmd: &mut Command, f: impl Fn(&str) -> bool) -> Option<u64> {

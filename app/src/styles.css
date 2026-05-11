@@ -353,11 +353,11 @@ button { font: inherit; cursor: pointer; }
 .bar > span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, var(--pink), var(--cyan));
-  box-shadow: 0 0 10px var(--pink);
+  background: linear-gradient(90deg, var(--c, var(--pink)), var(--cyan));
+  box-shadow: 0 0 10px var(--c, var(--pink));
 }
-.bar.warn > span { background: linear-gradient(90deg, var(--yellow), var(--pink)); }
-.bar.bad > span  { background: linear-gradient(90deg, var(--red), var(--pink)); }
+.bar.warn > span { background: linear-gradient(90deg, var(--yellow), var(--pink)); box-shadow: 0 0 10px var(--yellow); }
+.bar.bad > span  { background: linear-gradient(90deg, var(--red), var(--pink));    box-shadow: 0 0 10px var(--red); }
 
 /* tag chip */
 .chip {
