@@ -846,9 +846,97 @@ button { font: inherit; cursor: pointer; }
 .install-btn {
   --c: var(--c, #00f0ff);
   font-size: 10px;
-  letter-spacing: 0.24em;
+  letter-spacing: 0.22em;
   padding: 7px 12px;
   white-space: nowrap;
+}
+
+/* split button: ana eylem + ▾ kaynak menüsü */
+.install-group {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+}
+.install-group .install-btn-main {
+  border-right-width: 0;
+  padding-right: 10px;
+}
+.install-btn-arrow {
+  border-left-width: 0 !important;
+  padding: 7px 9px !important;
+  font-size: 11px !important;
+  letter-spacing: 0 !important;
+  border-left: 1px solid color-mix(in srgb, var(--c, var(--cyan)) 35%, transparent) !important;
+}
+/* dropdown açıkken parent kartın overflow'unu görünür yap, yoksa kırpılır */
+.app-card.has-open-dropdown,
+.repo-hit.has-open-dropdown {
+  overflow: visible;
+  z-index: 60;
+}
+
+.install-sources {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  min-width: 240px;
+  max-width: 360px;
+  background: linear-gradient(180deg, rgba(15,15,22,0.98), rgba(8,8,12,0.98));
+  border: 1px solid var(--c, var(--cyan));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--c, var(--cyan)) 24%, transparent),
+    0 22px 44px -20px rgba(0,0,0,0.7);
+  animation: install-menu-in 0.14s cubic-bezier(.18,.84,.24,1) both;
+}
+@keyframes install-menu-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.install-src-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  gap: 0 10px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s ease;
+}
+.install-src-item:hover {
+  background: color-mix(in srgb, var(--c, var(--cyan)) 10%, transparent);
+  border-left-color: var(--c, var(--cyan));
+}
+.install-src-label {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--c, var(--cyan));
+  text-shadow: 0 0 6px color-mix(in srgb, var(--c, var(--cyan)) 60%, transparent);
+}
+.install-src-note {
+  grid-row: 1;
+  grid-column: 2;
+  font-family: var(--f-body);
+  font-size: 11px;
+  color: var(--fg-dim);
+  text-align: right;
+}
+.install-src-pkg {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  color: var(--fg-dim);
+  margin-top: 2px;
+  word-break: break-all;
 }
 .install-btn:disabled {
   opacity: 0.55;

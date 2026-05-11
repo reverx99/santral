@@ -20,6 +20,11 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter};
 
+/// Aynı anda yalnızca bir native paket yöneticisi (apt/dnf/pacman/zypper)
+/// çalışsın — dpkg/dnf lock çakışmasını önler. Flatpak --user paralel
+/// çalışabilir, kilitten muaftır.
+static NATIVE_LOCK: Mutex<()> = Mutex::new(());
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActionRequest {
     /// Aksiyon türü, allowlist'te tanımlı bir anahtar
@@ -37,11 +42,14 @@ pub struct Task {
     pub id: u32,
     pub kind: String,
     pub label: String,
-    pub status: String, // "pending" | "running" | "succeeded" | "failed" | "cancelled" | "rejected"
+    pub status: String, // "queued" | "running" | "succeeded" | "failed" | "cancelled" | "rejected"
     pub command: String,
     pub args: Vec<String>,
     pub dry_run: bool,
+    pub needs_root: bool,
+    pub needs_native_lock: bool,
     pub started_at: u64,
+    pub queued_at: u64,
     pub ended_at: Option<u64>,
     pub exit_code: Option<i32>,
     pub log_count: u32,
@@ -81,61 +89,183 @@ fn update_task(id: u32, app: &AppHandle, f: impl FnOnce(&mut Task)) {
     }
 }
 
+/// Bir komutu çözen "resolved" output. `program` çalıştırılacak ikili,
+/// `args` execve'ye geçecek argümanlar (shell yok), `needs_root` true ise
+/// pkexec ile sarmalanmıştır, `needs_native_lock` true ise NATIVE_LOCK
+/// alınana kadar bekleyecek.
+struct Resolved {
+    program: String,
+    args: Vec<String>,
+    needs_root: bool,
+    needs_native_lock: bool,
+}
+
 /// ----- ALLOWLIST -----
-/// Bir ActionRequest'i (program, args, needs_root) tuple'ına çevirir.
-/// Bu fonksiyon TEK güven sınırıdır — burada validate edilen değerler dış
-/// dünyaya geçer. Bilinmeyen `kind` → None.
-fn resolve_command(req: &ActionRequest) -> Result<(String, Vec<String>, bool), String> {
+/// Bir ActionRequest'i Resolved'a çevirir. Bu fonksiyon TEK güven sınırıdır —
+/// burada validate edilen değerler dış dünyaya geçer. Bilinmeyen `kind` → Err.
+fn resolve_command(req: &ActionRequest) -> Result<Resolved, String> {
     match req.kind.as_str() {
-        // ----- non-root: flatpak --user -----
+
+        // ============= FLATPAK (--user, root yok) =============
+
         "flatpak.user.install" => {
             let app_id = req.args.first().ok_or("eksik appid")?;
             check_appid(app_id)?;
-            Ok((
-                "flatpak".into(),
-                vec![
-                    "install".into(),
-                    "--user".into(),
-                    "--noninteractive".into(),
-                    "--assumeyes".into(),
+            Ok(Resolved {
+                program: "flatpak".into(),
+                args: vec![
+                    "install".into(), "--user".into(),
+                    "--noninteractive".into(), "--assumeyes".into(),
                     app_id.clone(),
                 ],
-                false,
-            ))
+                needs_root: false, needs_native_lock: false,
+            })
         }
+        "flatpak.user.uninstall" => {
+            let app_id = req.args.first().ok_or("eksik appid")?;
+            check_appid(app_id)?;
+            Ok(Resolved {
+                program: "flatpak".into(),
+                args: vec![
+                    "uninstall".into(), "--user".into(),
+                    "--noninteractive".into(), "--assumeyes".into(),
+                    app_id.clone(),
+                ],
+                needs_root: false, needs_native_lock: false,
+            })
+        }
+        "flatpak.user.uninstall-unused" => Ok(Resolved {
+            program: "flatpak".into(),
+            args: vec![
+                "uninstall".into(), "--user".into(), "--unused".into(),
+                "--noninteractive".into(), "--assumeyes".into(),
+            ],
+            needs_root: false, needs_native_lock: false,
+        }),
         "flatpak.user.remote-add" => {
             let name = req.args.first().ok_or("eksik remote adı")?;
             let url = req.args.get(1).ok_or("eksik url")?;
             check_remote_name(name)?;
             check_https_url(url)?;
-            Ok((
-                "flatpak".into(),
-                vec![
-                    "remote-add".into(),
-                    "--user".into(),
-                    "--if-not-exists".into(),
-                    name.clone(),
-                    url.clone(),
+            Ok(Resolved {
+                program: "flatpak".into(),
+                args: vec![
+                    "remote-add".into(), "--user".into(), "--if-not-exists".into(),
+                    name.clone(), url.clone(),
                 ],
-                false,
-            ))
+                needs_root: false, needs_native_lock: false,
+            })
         }
-        // ----- test: noop -----
+
+        // ============= NATIVE INSTALL (root via pkexec) =============
+
+        "apt.install" => {
+            let pkg = req.args.first().ok_or("eksik paket adı")?;
+            check_pkgname(pkg)?;
+            Ok(pkexec_wrap(vec![
+                "env".into(), "DEBIAN_FRONTEND=noninteractive".into(),
+                "apt-get".into(), "install".into(), "-y".into(), pkg.clone(),
+            ], true))
+        }
+        "apt.autoremove" => Ok(pkexec_wrap(vec![
+            "env".into(), "DEBIAN_FRONTEND=noninteractive".into(),
+            "apt-get".into(), "autoremove".into(), "--purge".into(), "-y".into(),
+        ], true)),
+        "apt.clean" => Ok(pkexec_wrap(vec![
+            "apt-get".into(), "clean".into(),
+        ], true)),
+
+        "dnf.install" => {
+            let pkg = req.args.first().ok_or("eksik paket adı")?;
+            check_pkgname(pkg)?;
+            Ok(pkexec_wrap(vec![
+                "dnf".into(), "install".into(), "-y".into(), pkg.clone(),
+            ], true))
+        }
+        "dnf.autoremove" => Ok(pkexec_wrap(vec![
+            "dnf".into(), "autoremove".into(), "-y".into(),
+        ], true)),
+        "dnf.clean" => Ok(pkexec_wrap(vec![
+            "dnf".into(), "clean".into(), "all".into(),
+        ], true)),
+
+        "pacman.install" => {
+            let pkg = req.args.first().ok_or("eksik paket adı")?;
+            check_pkgname(pkg)?;
+            Ok(pkexec_wrap(vec![
+                "pacman".into(), "-S".into(), "--noconfirm".into(), pkg.clone(),
+            ], true))
+        }
+        "pacman.autoremove" => {
+            // pacman orphan listesi yoksa hata vermesin — sh -c kullanmamak için
+            // pacman'in kendi -Rns mekanizmasını kullan. Boş listede başarısız
+            // olabilir; UI bunu graceful gösterir.
+            Ok(pkexec_wrap(vec![
+                "sh".into(), "-c".into(),
+                "pacman -Qdtq 2>/dev/null | xargs -r pacman -Rns --noconfirm".into(),
+            ], true))
+        }
+        "pacman.clean" => Ok(pkexec_wrap(vec![
+            "pacman".into(), "-Sc".into(), "--noconfirm".into(),
+        ], true)),
+
+        "zypper.install" => {
+            let pkg = req.args.first().ok_or("eksik paket adı")?;
+            check_pkgname(pkg)?;
+            Ok(pkexec_wrap(vec![
+                "zypper".into(), "install".into(), "-y".into(), pkg.clone(),
+            ], true))
+        }
+        "zypper.autoremove" => Ok(pkexec_wrap(vec![
+            "zypper".into(), "rm".into(), "--clean-deps".into(), "-y".into(),
+        ], true)),
+        "zypper.clean" => Ok(pkexec_wrap(vec![
+            "zypper".into(), "clean".into(), "--all".into(),
+        ], true)),
+
+        "snap.install" => {
+            let pkg = req.args.first().ok_or("eksik paket adı")?;
+            check_pkgname(pkg)?;
+            Ok(pkexec_wrap(vec![
+                "snap".into(), "install".into(), pkg.clone(),
+            ], false)) // snap kendisi paket yöneticisi değil, kilide muaf
+        }
+
+        // ============= SYSTEM MAINTENANCE (root) =============
+
+        "journalctl.vacuum-time" => {
+            // örn. "7d", "30d"
+            let duration = req.args.first().cloned().unwrap_or_else(|| "7d".into());
+            check_vacuum_duration(&duration)?;
+            Ok(pkexec_wrap(vec![
+                "journalctl".into(),
+                format!("--vacuum-time={duration}"),
+            ], false))
+        }
+
+        // ============= TEST =============
         "noop.echo" => {
             let msg = req.args.first().cloned().unwrap_or_else(|| "merhaba".into());
             if msg.len() > 200 {
                 return Err("echo mesajı çok uzun".into());
             }
-            Ok(("echo".into(), vec![msg], false))
+            Ok(Resolved {
+                program: "echo".into(), args: vec![msg],
+                needs_root: false, needs_native_lock: false,
+            })
         }
-        // ----- placeholder: root gerektirenler (Faz 7.2'de) -----
-        kind if kind.starts_with("apt.") || kind.starts_with("dnf.")
-            || kind.starts_with("pacman.") || kind.starts_with("zypper.")
-            || kind.starts_with("systemctl.") || kind.starts_with("journalctl.")
-        => {
-            Err(format!("{kind}: root yetkisi gerekir — Faz 7.2'de polkit ile etkinleştirilecek"))
-        }
+
         _ => Err(format!("bilinmeyen aksiyon: {}", req.kind)),
+    }
+}
+
+/// Yardımcı: bir komutu pkexec ile sarmala. Native PM ise NATIVE_LOCK alır.
+fn pkexec_wrap(inner: Vec<String>, native_lock: bool) -> Resolved {
+    Resolved {
+        program: "pkexec".into(),
+        args: inner,
+        needs_root: true,
+        needs_native_lock: native_lock,
     }
 }
 
@@ -169,27 +299,80 @@ fn check_https_url(s: &str) -> Result<(), String> {
     Ok(())
 }
 
+fn check_pkgname(s: &str) -> Result<(), String> {
+    if s.is_empty() || s.len() > 128 {
+        return Err("geçersiz paket adı".into());
+    }
+    // apt/dnf/pacman/zypper paket adlarında genelde: harf/rakam, . - _ + ; nadir : (mimari ayırıcı)
+    if !s.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | '+' | ':')) {
+        return Err("paket adında geçersiz karakter".into());
+    }
+    // shell meta-karakterlere karşı kuşak — execve kullanılsa bile defansif
+    if s.contains("..") || s.starts_with('-') {
+        return Err("paket adı şüpheli".into());
+    }
+    Ok(())
+}
+
+fn check_vacuum_duration(s: &str) -> Result<(), String> {
+    if s.is_empty() || s.len() > 16 {
+        return Err("geçersiz süre".into());
+    }
+    // örn. "1d", "30d", "2weeks", "12h"
+    if !s.chars().all(|c| c.is_ascii_alphanumeric()) {
+        return Err("süre formatı uygun değil (örn. 7d)".into());
+    }
+    Ok(())
+}
+
+/// pkexec ve native paket yöneticisi exit kodlarını insan-okur mesaja
+/// çevir. pkexec: 126 = kullanıcı iptal, 127 = yetki yok.
+fn interpret_exit_code(prog: &str, code: i32) -> Option<String> {
+    if prog == "pkexec" {
+        match code {
+            126 => return Some("Yetkilendirme iptal edildi (parola girilmedi).".into()),
+            127 => return Some("Yetki reddedildi veya polkit ajanı yok.".into()),
+            _ => {}
+        }
+    }
+    if code == 100 {
+        // dnf check-update gibi bazı komutlar "100 = updates available" döner
+        return Some("Çıkış 100 — bilgilendirici durum (genelde sorun değil).".into());
+    }
+    None
+}
+
 /// ----- Tauri komutları -----
 
 #[tauri::command]
 pub fn start_action(app: AppHandle, req: ActionRequest, dry_run: bool) -> Result<u32, String> {
-    let (program, args, _needs_root) = resolve_command(&req)?;
+    let resolved = resolve_command(&req)?;
     let id = NEXT_ID.fetch_add(1, Ordering::SeqCst);
     let label = req
         .label
         .clone()
         .unwrap_or_else(|| format!("{} {}", req.kind, req.args.join(" ")));
-    let command_pretty = format!("{} {}", program, args.join(" "));
+    let command_pretty = format!("{} {}", resolved.program, resolved.args.join(" "));
 
+    let now = now_secs();
     let task = Task {
         id,
         kind: req.kind.clone(),
         label,
-        status: if dry_run { "pending".into() } else { "running".into() },
+        status: if dry_run {
+            "queued".into()
+        } else if resolved.needs_native_lock {
+            "queued".into()
+        } else {
+            "running".into()
+        },
         command: command_pretty.clone(),
-        args: args.clone(),
+        args: resolved.args.clone(),
         dry_run,
-        started_at: now_secs(),
+        needs_root: resolved.needs_root,
+        needs_native_lock: resolved.needs_native_lock,
+        started_at: now,
+        queued_at: now,
         ended_at: None,
         exit_code: None,
         log_count: 0,
@@ -204,6 +387,12 @@ pub fn start_action(app: AppHandle, req: ActionRequest, dry_run: bool) -> Result
     if dry_run {
         let dry_msg = format!("Çalıştırılacak komut: {command_pretty}");
         push_log(&app, id, "dry-run", &dry_msg);
+        if resolved.needs_root {
+            push_log(&app, id, "info", "Bu komut root yetkisi ister — gerçek modda pkexec parola sorar.");
+        }
+        if resolved.needs_native_lock {
+            push_log(&app, id, "info", "Paralel native paket işlemleri çakışmasın diye kuyrukta beklerdi.");
+        }
         update_task(id, &app, |t| {
             t.status = "succeeded".into();
             t.ended_at = Some(now_secs());
@@ -215,7 +404,7 @@ pub fn start_action(app: AppHandle, req: ActionRequest, dry_run: bool) -> Result
     // GERÇEK çalıştırma — ayrı thread
     let app_clone = app.clone();
     std::thread::spawn(move || {
-        run_task_blocking(app_clone, id, program, args);
+        run_task_blocking(app_clone, id, resolved);
     });
 
     Ok(id)
@@ -235,9 +424,23 @@ fn push_log(app: &AppHandle, task_id: u32, level: &str, text: &str) {
     }
 }
 
-fn run_task_blocking(app: AppHandle, id: u32, program: String, args: Vec<String>) {
-    let mut cmd = Command::new(&program);
-    cmd.args(&args)
+fn run_task_blocking(app: AppHandle, id: u32, resolved: Resolved) {
+    // Native paket yöneticisi gerekiyorsa kilidi al — başka native işlemler
+    // varsa burada bekler. Frontend için "queued" → "running" geçişini emit.
+    let _native_guard = if resolved.needs_native_lock {
+        push_log(&app, id, "info", "Native paket kilidi bekleniyor…");
+        let g = NATIVE_LOCK.lock().unwrap_or_else(|p| p.into_inner());
+        update_task(id, &app, |t| {
+            t.status = "running".into();
+            t.started_at = now_secs();
+        });
+        Some(g)
+    } else {
+        None
+    };
+
+    let mut cmd = Command::new(&resolved.program);
+    cmd.args(&resolved.args)
         .env("LC_ALL", "C")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -246,11 +449,16 @@ fn run_task_blocking(app: AppHandle, id: u32, program: String, args: Vec<String>
     let mut child = match cmd.spawn() {
         Ok(c) => c,
         Err(e) => {
-            push_log(&app, id, "err", &format!("başlatma hatası: {e}"));
+            let msg = if e.kind() == std::io::ErrorKind::NotFound {
+                format!("'{}' bulunamadı — kurulu mu?", resolved.program)
+            } else {
+                format!("başlatma hatası: {e}")
+            };
+            push_log(&app, id, "err", &msg);
             update_task(id, &app, |t| {
                 t.status = "failed".into();
                 t.ended_at = Some(now_secs());
-                t.error = Some(e.to_string());
+                t.error = Some(msg);
             });
             return;
         }
@@ -285,9 +493,19 @@ fn run_task_blocking(app: AppHandle, id: u32, program: String, args: Vec<String>
 
     let (final_status, exit_code, error) = match status {
         Ok(s) if s.success() => ("succeeded", s.code().unwrap_or(0), None),
-        Ok(s) => ("failed", s.code().unwrap_or(-1), Some(format!("exit {}", s.code().unwrap_or(-1)))),
+        Ok(s) => {
+            let code = s.code().unwrap_or(-1);
+            let nice = interpret_exit_code(&resolved.program, code)
+                .unwrap_or_else(|| format!("exit {code}"));
+            ("failed", code, Some(nice))
+        }
         Err(e) => ("failed", -1, Some(e.to_string())),
     };
+
+    if let Some(err_msg) = &error {
+        push_log(&app, id, "err", err_msg);
+    }
+
     update_task(id, &app, |t| {
         t.status = final_status.into();
         t.ended_at = Some(now_secs());

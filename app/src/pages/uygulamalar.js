@@ -13,6 +13,24 @@ const SOURCE_LABELS = {
   snap:    "SNAP",
 };
 
+const SOURCE_KIND = {
+  apt:     "apt.install",
+  dnf:     "dnf.install",
+  pacman:  "pacman.install",
+  zypper:  "zypper.install",
+  flatpak: "flatpak.user.install",
+  snap:    "snap.install",
+};
+
+const SOURCE_NOTE = {
+  flatpak: "kullanıcı (--user, root yok)",
+  apt:     "sistem geneli (parola sorulur)",
+  dnf:     "sistem geneli (parola sorulur)",
+  pacman:  "sistem geneli (parola sorulur)",
+  zypper:  "sistem geneli (parola sorulur)",
+  snap:    "sistem geneli (parola sorulur)",
+};
+
 let _state = null;
 
 export async function renderUygulamalar(host, { invoke }) {
@@ -177,19 +195,48 @@ function paint(host) {
 }
 
 function wireFlatpakButtons(scope) {
-  scope.querySelectorAll("[data-flatpak-install]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const appid = btn.dataset.flatpakInstall;
-      const label = btn.dataset.label || appid;
+  // Tüm install-kind buton (kart ana ve dropdown menüsündeki) tıklamaları
+  scope.querySelectorAll("[data-install-kind]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      closeAllDropdowns(scope);
+      const kind  = btn.dataset.installKind;
+      const pkg   = btn.dataset.installPkg;
+      const label = btn.dataset.installLabel || pkg;
       try {
-        await tasks.start({
-          kind: "flatpak.user.install",
-          args: [appid],
-          label: `${label} (flatpak --user)`,
-        });
+        await tasks.start({ kind, args: [pkg], label });
       } catch {}
     });
   });
+
+  // ▾ dropdown toggle butonları
+  scope.querySelectorAll("[data-install-toggle]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const list = btn.parentElement?.querySelector(".install-sources");
+      if (!list) return;
+      const wasOpen = !list.hidden;
+      closeAllDropdowns(scope);
+      if (!wasOpen) {
+        list.hidden = false;
+        // overflow:hidden olan parent (.app-card / .repo-hit) dropdown'u
+        // kırpmasın diye işaretle
+        const card = btn.closest(".app-card, .repo-hit");
+        if (card) card.classList.add("has-open-dropdown");
+      }
+    });
+  });
+
+  // Dışarı tıklama → tüm dropdown'ları kapat
+  if (!scope.dataset.dropdownGlobal) {
+    document.addEventListener("click", () => closeAllDropdowns(scope));
+    scope.dataset.dropdownGlobal = "1";
+  }
+}
+
+function closeAllDropdowns(scope) {
+  scope.querySelectorAll(".install-sources").forEach((l) => { l.hidden = true; });
+  scope.querySelectorAll(".has-open-dropdown").forEach((c) => c.classList.remove("has-open-dropdown"));
 }
 
 function paintRepoSection(host, opts = {}) {
@@ -259,10 +306,18 @@ function repoHitCard(h) {
   const color = colorByKind[h.source] || "#00f0ff";
   const title = h.label || h.name;
   const subtitle = h.label ? h.name : "";
-  // Faz 7.1: flatpak için canlı kurulum; root gerektirenler placeholder
-  const btn = h.source === "flatpak"
-    ? `<button class="btn install-btn repo-hit-install" data-flatpak-install="${esc(h.name)}" data-label="${esc(title)}">▶ KUR (--user)</button>`
-    : `<button class="btn install-btn repo-hit-install" disabled title="Faz 7.2 — root yetkisi polkit ile">▶ KUR <small>(root)</small></button>`;
+  const kind = SOURCE_KIND[h.source];
+  const noteText = SOURCE_NOTE[h.source] || "";
+  const label = `${title} (${SOURCE_LABELS[h.source] || h.source})`;
+  const btn = kind
+    ? `<button class="btn install-btn repo-hit-install"
+              data-install-kind="${esc(kind)}"
+              data-install-pkg="${esc(h.name)}"
+              data-install-label="${esc(label)}"
+              title="${esc(noteText)}">
+         ▶ KUR <small>${esc(SOURCE_LABELS[h.source] || h.source)}</small>
+       </button>`
+    : `<button class="btn install-btn repo-hit-install off" disabled>▶ KUR</button>`;
   return `
     <article class="repo-hit fade-in" style="--c:${esc(color)}">
       <header class="repo-hit-head">
@@ -295,10 +350,8 @@ function appCard(app, cat) {
   const detected = cat.detected_sources || [];
   const preferred = cat.preferred_source;
 
-  // hangi kaynaklar bu sistemde kurulabilir?
   const sources = Object.keys(app.sources);
   const installable = sources.filter(s => detected.includes(s));
-  const canInstall = installable.length > 0;
 
   const sourceChips = sources.map(s => {
     const ok = detected.includes(s);
@@ -315,16 +368,6 @@ function appCard(app, cat) {
     ? `<a class="app-home" href="${esc(app.homepage)}" target="_blank" rel="noopener" title="${esc(app.homepage)}">↗</a>`
     : "";
 
-  // Sadece flatpak için (--user mode) Faz 7.1'de kurulum aktif.
-  // apt/dnf/pacman/zypper root gerektirir → Faz 7.2.
-  const flatpakId = app.sources.flatpak;
-  const canFlatpak = flatpakId && installable.includes("flatpak");
-  const installBtn = canFlatpak
-    ? `<button class="btn install-btn" data-flatpak-install="${esc(flatpakId)}" data-label="${esc(app.name)}">▶ FLATPAK ile KUR</button>`
-    : (canInstall
-        ? `<button class="btn install-btn" disabled title="Faz 7.2 — root yetkisi polkit ile">▶ KUR <small>(root)</small></button>`
-        : `<button class="btn install-btn off" disabled title="bu sistemde kurulamıyor">× KAYNAK YOK</button>`);
-
   return `
     <article class="app-card fade-in" style="--c:${esc(color)}">
       <header class="app-head">
@@ -336,8 +379,59 @@ function appCard(app, cat) {
       <div class="app-tags">${tags}</div>
       <div class="app-foot">
         <div class="src-chips">${sourceChips}</div>
-        ${installBtn}
+        ${installGroup(app, installable, preferred)}
       </div>
     </article>
   `;
+}
+
+/** Kaynak seçici buton grubu — preferred ana butonda, diğerleri ▾ menüsünde. */
+function installGroup(app, installable, preferred) {
+  if (installable.length === 0) {
+    return `<button class="btn install-btn off" disabled title="bu sistemde kurulamıyor">× KAYNAK YOK</button>`;
+  }
+  // Sıralama: native preferred → diğer native'ler → flatpak → snap
+  const order = (s) =>
+    (s === preferred ? 0 :
+     ["apt", "dnf", "pacman", "zypper"].includes(s) ? 1 :
+     s === "flatpak" ? 2 : 3);
+  const sorted = [...installable].sort((a, b) => order(a) - order(b));
+  const main = sorted[0];
+  const rest = sorted.slice(1);
+
+  const mainBtn = installBtnHtml(app, main, true);
+  if (rest.length === 0) {
+    return `<div class="install-group">${mainBtn}</div>`;
+  }
+  const menuItems = rest.map((s) => `
+    <li>
+      <button class="install-src-item" ${dataAttrs(app, s)} type="button" role="menuitem">
+        <span class="install-src-label">${esc(SOURCE_LABELS[s])}</span>
+        <span class="install-src-note">${esc(SOURCE_NOTE[s] || "")}</span>
+        <code class="install-src-pkg">${esc(app.sources[s])}</code>
+      </button>
+    </li>
+  `).join("");
+
+  return `
+    <div class="install-group">
+      ${mainBtn}
+      <button class="btn install-btn-arrow" type="button" aria-label="Diğer kaynaklar" aria-haspopup="menu" data-install-toggle>▾</button>
+      <ul class="install-sources" hidden role="menu">${menuItems}</ul>
+    </div>
+  `;
+}
+
+function installBtnHtml(app, source, mainStyle) {
+  const cls = mainStyle ? "btn install-btn install-btn-main" : "btn install-btn";
+  return `<button class="${cls}" ${dataAttrs(app, source)} type="button">
+    ▶ KUR <small>(${esc(SOURCE_LABELS[source])})</small>
+  </button>`;
+}
+
+function dataAttrs(app, source) {
+  const kind = SOURCE_KIND[source];
+  const pkg = app.sources[source];
+  const label = `${app.name} (${SOURCE_LABELS[source]})`;
+  return `data-install-kind="${esc(kind)}" data-install-pkg="${esc(pkg)}" data-install-label="${esc(label)}"`;
 }

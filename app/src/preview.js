@@ -63,12 +63,17 @@ let _previewTaskId = 1;
 
 async function fakeStartAction({ req, dryRun }) {
   const id = _previewTaskId++;
+  const isRoot = !req.kind.startsWith("flatpak.user") && req.kind !== "noop.echo";
+  const program = isRoot ? "pkexec" : (req.kind.startsWith("flatpak") ? "flatpak" : "echo");
+  const pretty = `${program} ${(req.args || []).join(" ")}`;
   const task = {
     id, kind: req.kind, label: req.label || req.kind,
     status: dryRun ? "succeeded" : "running",
-    command: `${req.kind} ${(req.args || []).join(" ")}`,
+    command: pretty,
     args: req.args || [], dry_run: !!dryRun,
+    needs_root: isRoot, needs_native_lock: isRoot,
     started_at: Math.floor(Date.now() / 1000),
+    queued_at: Math.floor(Date.now() / 1000),
     ended_at: dryRun ? Math.floor(Date.now() / 1000) : null,
     exit_code: dryRun ? 0 : null,
     log_count: 0, error: null,
@@ -76,23 +81,20 @@ async function fakeStartAction({ req, dryRun }) {
   PREVIEW_TASKS.set(id, task);
   tasks.onTaskUpdate(task);
   if (dryRun) {
-    tasks.onTaskLog({ task_id: id, level: "dry-run", text: `Çalıştırılacak komut: ${task.command}` });
-    task.log_count = 1;
+    tasks.onTaskLog({ task_id: id, level: "dry-run", text: `Çalıştırılacak komut: ${pretty}` });
+    if (isRoot) tasks.onTaskLog({ task_id: id, level: "info", text: "Bu komut root yetkisi ister — gerçek modda pkexec parola sorar." });
+    task.log_count = isRoot ? 2 : 1;
     return id;
   }
-  // gerçek mod simülasyonu — birkaç log satırı yay, ardından succeeded
+  // gerçek mod simülasyonu — kind'a göre uygun fake log'lar
+  const fakeLines = fakeLogsFor(req.kind, req.args || []);
   let i = 0;
-  const fakeLines = [
-    `Looking for matches…`,
-    `Required runtime for ${req.args?.[0] || "app"}: org.freedesktop.Platform/x86_64/23.08`,
-    `Receiving objects: 100% (12/12)`,
-    `Installation complete.`,
-  ];
   const tick = () => {
     if (i < fakeLines.length) {
-      tasks.onTaskLog({ task_id: id, level: "out", text: fakeLines[i++] });
+      const ln = fakeLines[i++];
+      tasks.onTaskLog({ task_id: id, level: ln.level || "out", text: ln.text });
       task.log_count++;
-      setTimeout(tick, 350);
+      setTimeout(tick, 280);
     } else {
       task.status = "succeeded";
       task.ended_at = Math.floor(Date.now() / 1000);
@@ -100,8 +102,63 @@ async function fakeStartAction({ req, dryRun }) {
       tasks.onTaskUpdate(task);
     }
   };
-  setTimeout(tick, 250);
+  setTimeout(tick, 220);
   return id;
+}
+
+function fakeLogsFor(kind, args) {
+  const pkg = args[0] || "paket";
+  if (kind === "flatpak.user.install") {
+    return [
+      { text: "Looking for matches…" },
+      { text: `Required runtime for ${pkg}: org.freedesktop.Platform/x86_64/23.08` },
+      { text: "Receiving objects: 100% (12/12)" },
+      { text: "Installation complete." },
+    ];
+  }
+  if (kind === "flatpak.user.remote-add") {
+    return [{ text: `Remote eklendi: ${args[0]} → ${args[1]}` }];
+  }
+  if (kind === "flatpak.user.uninstall-unused") {
+    return [
+      { text: "Looking for unused runtimes…" },
+      { text: "Uninstalling org.freedesktop.Platform.GL.default" },
+      { text: "Uninstall complete." },
+    ];
+  }
+  if (kind.endsWith(".install")) {
+    const pm = kind.split(".")[0].toUpperCase();
+    return [
+      { text: `Reading package lists…` },
+      { text: `Building dependency tree…` },
+      { text: `The following NEW packages will be installed: ${pkg}` },
+      { text: `Get:1 ${pkg} 117.0 [55.4 MB]` },
+      { text: `Fetched 55.4 MB in 4s (12.8 MB/s)` },
+      { text: `Selecting previously unselected package ${pkg}.` },
+      { text: `Setting up ${pkg} (117.0)…` },
+      { text: `[${pm}] ✓ kurulum tamamlandı` },
+    ];
+  }
+  if (kind.endsWith(".autoremove")) {
+    return [
+      { text: `Reading package lists…` },
+      { text: `12 paket kaldırılacak: libfoo libbar libbaz …` },
+      { text: `Freed 142 MB.` },
+    ];
+  }
+  if (kind.endsWith(".clean")) {
+    return [
+      { text: `Clearing package cache…` },
+      { text: `Removed 642 MB of cached packages.` },
+    ];
+  }
+  if (kind === "journalctl.vacuum-time") {
+    return [
+      { text: `Deleted archived journal /var/log/journal/.../system@…journal` },
+      { text: `Vacuuming done, freed 312.0M of archived journals…` },
+    ];
+  }
+  return [{ text: `Simüle edildi: ${kind} ${args.join(" ")}` }];
 }
 
 const MOCK = {
