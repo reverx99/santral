@@ -30,6 +30,9 @@ export async function renderDonanim(host, { invoke }) {
       ${modulesCard(hw.modules)}
     </div>
 
+    ${sectionHead("DEPOLAMA")}
+    <div class="cards">${storageCards(hw.storage)}</div>
+
     ${sectionHead("SES")}
     <div class="cards">${audioCards(hw.audio)}</div>
 
@@ -303,6 +306,79 @@ function modulesCard(m) {
     <h3 class="card-title">${Number(m.loaded || 0).toLocaleString("tr-TR")}</h3>
     <div class="card-sub">yüklü modül sayısı (lsmod).</div>
     ${examples ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${examples}</div>` : ""}
+  </article>`;
+}
+
+function storageCards(devices) {
+  if (!devices || devices.length === 0) {
+    return `<div class="muted">disk bulunamadı (/sys/block boş).</div>`;
+  }
+  return devices.map(storageCard).join("");
+}
+
+function storageCard(d) {
+  const colorByKind = {
+    NVMe: "#ff0099", SSD: "#00f0ff", HDD: "#ffd400",
+    eMMC: "#b400ff", Removable: "#66ff99", Virtual: "#5a5a6a",
+  };
+  const color = colorByKind[d.kind] || "#00f0ff";
+  const title = d.model || d.name.toUpperCase();
+  const sub = `${d.kind} · ${fmtBytes(d.size_bytes)}${d.vendor ? " · " + d.vendor : ""}`;
+
+  const rows = [
+    ["aygıt", `/dev/${d.name}`],
+    ["firmware", d.firmware || "—"],
+    ["sıcaklık", d.temperature_c != null ? `${d.temperature_c.toFixed(1)}°C` : "—",
+      d.temperature_c != null && d.temperature_c >= 70 ? "value-warn" : ""],
+  ];
+
+  // SMART sağlık bölümü
+  let smartBlock = "";
+  if (d.smart) {
+    if (d.smart.error) {
+      smartBlock = `<div class="storage-smart-err">${esc(d.smart.error)}</div>`;
+    } else {
+      const wear = d.smart.percent_used;
+      const wearColor = wear == null ? "#5a5a6a"
+        : wear >= 80 ? "#ff4477"
+        : wear >= 50 ? "#ffd400"
+        : "#66ff99";
+      const wearBar = wear != null
+        ? `<div class="bar" style="--c:${wearColor}"><span style="width:${Math.min(100, wear)}%"></span></div>`
+        : "";
+      const poh = d.smart.power_on_hours;
+      const days = poh != null ? Math.floor(poh / 24) : null;
+      const years = poh != null ? (poh / (24 * 365)).toFixed(1) : null;
+      smartBlock = `
+        <div class="storage-smart">
+          <div class="storage-smart-head">
+            <span class="storage-smart-tag">SMART</span>
+            <span class="chip ${d.smart.passed ? "ok" : "bad"}">${d.smart.passed ? "✓ Sağlıklı" : "× Sorun"}</span>
+            ${wear != null ? `<span class="chip" style="border-color:${wearColor};color:${wearColor}">Aşınma %${wear}</span>` : ""}
+            ${d.smart.available_spare != null ? `<span class="chip info">Yedek %${d.smart.available_spare}</span>` : ""}
+          </div>
+          ${wearBar}
+          <div class="card-rows" style="margin-top:8px">
+            ${poh != null ? `<div class="card-row"><span>çalışma süresi</span><span>${poh.toLocaleString("tr-TR")} sa · ${days}g · ${years}yıl</span></div>` : ""}
+            ${d.smart.power_cycles != null ? `<div class="card-row"><span>açma sayısı</span><span>${d.smart.power_cycles.toLocaleString("tr-TR")}</span></div>` : ""}
+            ${d.smart.data_read_bytes != null ? `<div class="card-row"><span>okunan</span><span>${esc(fmtBytes(d.smart.data_read_bytes))}</span></div>` : ""}
+            ${d.smart.data_written_bytes != null ? `<div class="card-row"><span>yazılan</span><span>${esc(fmtBytes(d.smart.data_written_bytes))}</span></div>` : ""}
+          </div>
+        </div>
+      `;
+    }
+  } else {
+    smartBlock = `<div class="storage-smart-none muted">SMART verisi yok — <code>smartctl</code> kurulu değil (smartmontools paketi).</div>`;
+  }
+
+  return `<article class="card fade-in" style="--c:${color}">
+    <div class="card-head"><span>${esc(d.kind.toUpperCase())}</span></div>
+    <h3 class="card-title">${esc(title)}</h3>
+    <div class="card-sub">${esc(sub)}</div>
+    <div class="card-rows" style="margin-top:10px">
+      ${rows.map(([k, v, cls]) => `<div class="card-row"><span>${esc(k)}</span><span${cls ? ` class="${cls}"` : ""}>${esc(String(v ?? "—"))}</span></div>`).join("")}
+    </div>
+    ${smartBlock}
   </article>`;
 }
 

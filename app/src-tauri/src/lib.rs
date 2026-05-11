@@ -8,6 +8,7 @@ mod distro;
 mod hardware;
 mod optimization;
 mod packages;
+mod repo_search;
 mod repos;
 mod scanner;
 mod system;
@@ -74,6 +75,11 @@ fn repo_list() -> repos::RepoList {
     repos::collect()
 }
 
+#[tauri::command]
+fn app_search(query: String) -> repo_search::SearchResults {
+    repo_search::search(&query)
+}
+
 pub fn run() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -86,6 +92,7 @@ pub fn run() {
             package_overview,
             optimization_scan,
             repo_list,
+            app_search,
         ])
         .run(tauri::generate_context!())
         .expect("santral: tauri runtime failed");

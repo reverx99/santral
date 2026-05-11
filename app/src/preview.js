@@ -334,15 +334,95 @@ const MOCK = {
       { connector: "card0-HDMI-A-1", status: "connected",  enabled: true,  current_mode: "1920x1080", modes_count: 22, preferred_mode: "1920x1080" },
       { connector: "card0-DP-2",   status: "disconnected", enabled: false, current_mode: null,        modes_count: 0,  preferred_mode: null },
     ],
+    storage: [
+      {
+        name: "nvme0n1", kind: "NVMe",
+        model: "Samsung SSD 970 EVO Plus 1TB",
+        vendor: null, firmware: "2B2QEXM7",
+        size_bytes: 1000 * 1024 ** 3,
+        rotational: false, removable: false,
+        temperature_c: 42.0,
+        smart: {
+          passed: true, source: "smartctl",
+          power_on_hours: 3284, power_cycles: 412,
+          percent_used: 6, available_spare: 100,
+          data_read_bytes: 24.6 * 1024 ** 4,
+          data_written_bytes: 11.8 * 1024 ** 4,
+          temperature_c: 42.0,
+          error: null,
+        },
+      },
+      {
+        name: "sda", kind: "SSD",
+        model: "Crucial MX500 2TB",
+        vendor: "ATA", firmware: "M3CR046",
+        size_bytes: 2 * 1024 ** 4,
+        rotational: false, removable: false,
+        temperature_c: 38.0,
+        smart: {
+          passed: true, source: "smartctl",
+          power_on_hours: 8742, power_cycles: 1208,
+          percent_used: null, available_spare: null,
+          data_read_bytes: null,
+          data_written_bytes: null,
+          temperature_c: 38.0,
+          error: null,
+        },
+      },
+      {
+        name: "sdb", kind: "HDD",
+        model: "WDC WD40EZRZ-00G",
+        vendor: "ATA", firmware: "80.00A80",
+        size_bytes: 4 * 1024 ** 4,
+        rotational: true, removable: false,
+        temperature_c: null,
+        smart: { passed: false, source: "smartctl",
+          power_on_hours: null, power_cycles: null,
+          percent_used: null, available_spare: null,
+          data_read_bytes: null, data_written_bytes: null, temperature_c: null,
+          error: "smartctl root yetkisi istiyor — Faz 7'de polkit ile alınacak",
+        },
+      },
+    ],
   }),
+  app_search: ({ query }) => {
+    const q = (query || "").toLowerCase();
+    if (q.length < 2) return { query, native: [], flatpak: [], native_source: "apt", elapsed_ms: 0, limit: 60, truncated: false };
+    const allNative = [
+      { source: "apt", name: "firefox",         summary: "Safe and easy web browser from Mozilla", version: "117.0+linuxmint1+vera", remote: null },
+      { source: "apt", name: "firefox-locale-tr", summary: "Mozilla Firefox - Turkish language pack", version: "117.0", remote: null },
+      { source: "apt", name: "firefox-esr",     summary: "Mozilla Firefox web browser - Extended Support Release", version: "115.2.0esr", remote: null },
+      { source: "apt", name: "thunderbird",     summary: "mail/news client with RSS, chat and integrated spam filter", version: "1:115.2.1", remote: null },
+      { source: "apt", name: "chromium",        summary: "web browser", version: "117.0.5938.62", remote: null },
+      { source: "apt", name: "vlc",             summary: "multimedia player and streamer", version: "3.0.18", remote: null },
+      { source: "apt", name: "neovim",          summary: "heavily refactored vim fork", version: "0.7.2-7", remote: null },
+      { source: "apt", name: "git",             summary: "fast, scalable, distributed revision control system", version: "1:2.34.1-1ubuntu1.10", remote: null },
+      { source: "apt", name: "tilix",           summary: "Tiling terminal emulator using GTK+ 3", version: "1.9.6-2", remote: null },
+    ].filter(h => (h.name + " " + h.summary).toLowerCase().includes(q));
+    const allFlatpak = [
+      { source: "flatpak", name: "org.mozilla.firefox",       label: "Firefox",            summary: "Fast, Private & Safe Web Browser", remote: "flathub",      version: "117.0" },
+      { source: "flatpak", name: "com.brave.Browser",         label: "Brave Browser",       summary: "Secure, fast and private web browser", remote: "flathub",   version: "1.58.124" },
+      { source: "flatpak", name: "io.gitlab.librewolf-community", label: "LibreWolf",       summary: "Privacy-focused Firefox fork",     remote: "flathub",     version: "117.0-1" },
+      { source: "flatpak", name: "com.github.tchx84.Flatseal",label: "Flatseal",            summary: "Manage Flatpak permissions",       remote: "flathub",     version: "2.2.0"  },
+      { source: "flatpak", name: "org.gnome.gitlab.somas.Apostrophe", label: "Apostrophe",  summary: "Markdown editor", remote: "flathub", version: "2.6.5" },
+    ].filter(h => (h.name + " " + (h.label || "") + " " + (h.summary || "")).toLowerCase().includes(q));
+    return {
+      query, native: allNative, flatpak: allFlatpak,
+      native_source: "apt",
+      elapsed_ms: 480 + Math.floor(Math.random() * 600),
+      limit: 60, truncated: false,
+    };
+  },
 };
 
-const invoke = async (cmd) => {
-  await new Promise((r) => setTimeout(r, 60));
+const invoke = async (cmd, args) => {
+  // app_search canlı arama hissi için biraz daha uzun gecikme
+  const delay = cmd === "app_search" ? 700 + Math.random() * 400 : 60;
+  await new Promise((r) => setTimeout(r, delay));
   if (cmd === "app_catalog")  return await loadCatalog();
   if (cmd === "scan_catalog") return await loadScanners();
   if (!MOCK[cmd]) throw new Error("unknown command: " + cmd);
-  return MOCK[cmd]();
+  return MOCK[cmd](args || {});
 };
 
 const ROUTES = {

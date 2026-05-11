@@ -18,6 +18,35 @@ pub struct HardwareInfo {
     pub modules: ModulesInfo,
     pub uefi: bool,
     pub displays: Vec<DisplayInfo>,
+    pub storage: Vec<StorageDevice>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct StorageDevice {
+    pub name: String,                   // "sda", "nvme0n1"
+    pub kind: String,                   // "NVMe" | "SSD" | "HDD" | "eMMC" | "Removable" | "Virtual"
+    pub model: Option<String>,
+    pub vendor: Option<String>,
+    pub firmware: Option<String>,
+    pub size_bytes: u64,
+    pub rotational: bool,
+    pub removable: bool,
+    pub temperature_c: Option<f32>,
+    pub smart: Option<SmartHealth>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct SmartHealth {
+    pub passed: bool,
+    pub source: String,                 // "smartctl"
+    pub power_on_hours: Option<u64>,
+    pub power_cycles: Option<u64>,
+    pub percent_used: Option<u32>,      // NVMe wear-level (%)
+    pub available_spare: Option<u32>,   // NVMe yedek (%)
+    pub data_read_bytes: Option<u64>,
+    pub data_written_bytes: Option<u64>,
+    pub temperature_c: Option<f32>,
+    pub error: Option<String>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -132,7 +161,193 @@ pub fn collect() -> HardwareInfo {
         modules: collect_modules(),
         uefi: std::path::Path::new("/sys/firmware/efi").exists(),
         displays: collect_displays(),
+        storage: collect_storage(),
     }
+}
+
+fn collect_storage() -> Vec<StorageDevice> {
+    let mut out = Vec::new();
+    let Ok(entries) = std::fs::read_dir("/sys/block") else { return out; };
+    for e in entries.flatten() {
+        let name = e.file_name().to_string_lossy().to_string();
+        // pseudo / partition-only / optical / zram'i atla
+        if name.starts_with("loop")
+            || name.starts_with("ram")
+            || name.starts_with("dm-")
+            || name.starts_with("sr")
+            || name.starts_with("zram")
+        {
+            continue;
+        }
+        let p = e.path();
+        let read_str = |f: &str| std::fs::read_to_string(p.join(f))
+            .ok().map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+        let read_u64 = |f: &str| std::fs::read_to_string(p.join(f))
+            .ok().and_then(|s| s.trim().parse::<u64>().ok());
+        let read_bool = |f: &str| std::fs::read_to_string(p.join(f))
+            .ok().and_then(|s| s.trim().parse::<u32>().ok())
+            .map(|v| v == 1)
+            .unwrap_or(false);
+
+        let size_blocks = read_u64("size").unwrap_or(0);
+        let size_bytes = size_blocks.saturating_mul(512);
+        if size_bytes == 0 {
+            continue;
+        }
+
+        let rotational = read_bool("queue/rotational");
+        let removable  = read_bool("removable");
+
+        let kind = if name.starts_with("nvme") {
+            "NVMe"
+        } else if name.starts_with("mmcblk") {
+            "eMMC"
+        } else if name.starts_with("vd") || name.starts_with("xvd") {
+            "Virtual"
+        } else if removable {
+            "Removable"
+        } else if rotational {
+            "HDD"
+        } else {
+            "SSD"
+        }.to_string();
+
+        let model    = read_str("device/model");
+        let vendor   = read_str("device/vendor");
+        let firmware = read_str("device/firmware_rev")
+            .or_else(|| read_str("device/rev"));
+
+        let temperature_c = if name.starts_with("nvme") {
+            find_nvme_temp(&name)
+        } else {
+            None
+        };
+
+        let smart = collect_smart(&name);
+
+        out.push(StorageDevice {
+            name, kind, model, vendor, firmware,
+            size_bytes, rotational, removable,
+            temperature_c, smart,
+        });
+    }
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    out
+}
+
+fn find_nvme_temp(name: &str) -> Option<f32> {
+    // "nvme0n1" → "nvme0"
+    let ctrl = name.split('n').next()?;
+    let hwmon_root = format!("/sys/class/nvme/{ctrl}/hwmon");
+    let entries = std::fs::read_dir(&hwmon_root).ok()?;
+    for e in entries.flatten() {
+        let milli_str = std::fs::read_to_string(e.path().join("temp1_input")).ok()?;
+        if let Ok(milli) = milli_str.trim().parse::<i64>() {
+            return Some(milli as f32 / 1000.0);
+        }
+    }
+    None
+}
+
+fn collect_smart(device: &str) -> Option<SmartHealth> {
+    if which::which("smartctl").is_err() {
+        return None;
+    }
+    let dev_path = format!("/dev/{device}");
+    let out = std::process::Command::new("smartctl")
+        .args(["--json", "-a", &dev_path])
+        .env("LC_ALL", "C")
+        .output()
+        .ok()?;
+    // smartctl exit code, bit-encoded — 0 = OK; 2 = open failed (usually perms)
+    let stdout = out.stdout;
+    let json: serde_json::Value = serde_json::from_slice(&stdout).ok()?;
+
+    let passed = json
+        .pointer("/smart_status/passed")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+
+    let nvme = json.pointer("/nvme_smart_health_information_log");
+    let nvme_u64 = |k: &str| nvme.and_then(|n| n.get(k)).and_then(|v| v.as_u64());
+    let nvme_f64 = |k: &str| nvme.and_then(|n| n.get(k)).and_then(|v| v.as_f64());
+
+    let ata_raw = |id: u32| -> Option<u64> {
+        let table = json.pointer("/ata_smart_attributes/table")?.as_array()?;
+        for attr in table {
+            if attr.get("id").and_then(|v| v.as_u64()) == Some(id as u64) {
+                return attr.pointer("/raw/value").and_then(|v| v.as_u64());
+            }
+        }
+        None
+    };
+
+    let power_on_hours = nvme_u64("power_on_hours").or_else(|| ata_raw(9));
+    let power_cycles   = nvme_u64("power_cycles").or_else(|| ata_raw(12));
+    let percent_used   = nvme_u64("percentage_used").map(|v| v as u32);
+    let available_spare = nvme_u64("available_spare").map(|v| v as u32);
+
+    // NVMe data_units_read/written: birim = 1000 sektör × 512 B = 512_000 B
+    let data_read_bytes    = nvme_u64("data_units_read").map(|v| v.saturating_mul(512_000));
+    let data_written_bytes = nvme_u64("data_units_written").map(|v| v.saturating_mul(512_000));
+
+    let temperature_c = nvme_f64("temperature")
+        .or_else(|| ata_raw(194).map(|v| v as f64))
+        .map(|v| v as f32);
+
+    // Eğer hiçbir alan dolmadıysa smartctl muhtemelen yetki nedeniyle başarısız oldu
+    if !passed
+        && power_on_hours.is_none()
+        && percent_used.is_none()
+        && temperature_c.is_none()
+    {
+        // mesage parse etmeye çalış
+        let messages = json.pointer("/smartctl/messages")
+            .and_then(|m| m.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|m| m.get("string").and_then(|s| s.as_str()))
+                    .collect::<Vec<_>>()
+                    .join("; ")
+            })
+            .unwrap_or_default();
+        if messages.contains("Permission denied") || messages.contains("Operation not permitted") {
+            return Some(SmartHealth {
+                passed: false,
+                source: "smartctl".into(),
+                power_on_hours: None,
+                power_cycles: None,
+                percent_used: None,
+                available_spare: None,
+                data_read_bytes: None,
+                data_written_bytes: None,
+                temperature_c: None,
+                error: Some("smartctl root yetkisi istiyor — Faz 7'de polkit ile alınacak".into()),
+            });
+        }
+        if messages.is_empty() {
+            return None;
+        }
+        return Some(SmartHealth {
+            passed: false,
+            source: "smartctl".into(),
+            power_on_hours: None, power_cycles: None,
+            percent_used: None, available_spare: None,
+            data_read_bytes: None, data_written_bytes: None,
+            temperature_c: None,
+            error: Some(messages),
+        });
+    }
+
+    Some(SmartHealth {
+        passed,
+        source: "smartctl".into(),
+        power_on_hours, power_cycles,
+        percent_used, available_spare,
+        data_read_bytes, data_written_bytes,
+        temperature_c,
+        error: None,
+    })
 }
 
 fn collect_displays() -> Vec<DisplayInfo> {

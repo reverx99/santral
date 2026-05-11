@@ -20,6 +20,9 @@ export async function renderUygulamalar(host, { invoke }) {
     cat,
     selectedCategory: "all",
     query: "",
+    invoke,
+    repoSearch: null,    // { query, native: [], flatpak: [], elapsed_ms }
+    repoSearching: false,
   };
 
   host.innerHTML = `
@@ -38,6 +41,9 @@ export async function renderUygulamalar(host, { invoke }) {
       <div class="search">
         <span class="search-glyph">⌕</span>
         <input id="apps-search" type="search" placeholder="uygulama ara…" autocomplete="off" spellcheck="false" />
+        <button class="btn search-go" id="apps-search-go" hidden>
+          🔍 Repo'larda ara
+        </button>
       </div>
       <div class="cats" id="apps-cats">
         ${categoryChip("all", "TÜMÜ", null, true)}
@@ -45,11 +51,18 @@ export async function renderUygulamalar(host, { invoke }) {
       </div>
     </div>
 
+    <div class="apps-section-head" id="apps-curated-head">
+      <span>Küratörlü Arşiv</span>
+      <span class="muted" id="apps-curated-count"></span>
+    </div>
+
     <div class="apps-grid" id="apps-grid"></div>
     <div class="apps-empty" id="apps-empty" hidden>
       <span class="reel-glyph" style="color:var(--fg-muted)">⌕</span>
-      <p>aramana uyan uygulama bulunamadı.</p>
+      <p>aramana uyan küratörlü uygulama yok — alttan "Repo'larda ara" deneyebilirsin.</p>
     </div>
+
+    <div id="apps-repo-section" hidden></div>
   `;
 
   wire(host);
@@ -85,14 +98,31 @@ function categoryChip(id, label, color, active) {
 
 function wire(host) {
   host.querySelector("#refresh")?.addEventListener("click", () => {
-    const invoke = host.__invoke;
+    const invoke = host.__invoke || _state.invoke;
     if (invoke) renderUygulamalar(host, { invoke });
   });
 
-  host.querySelector("#apps-search").addEventListener("input", (e) => {
+  const $input = host.querySelector("#apps-search");
+  const $go    = host.querySelector("#apps-search-go");
+
+  $input.addEventListener("input", (e) => {
     _state.query = e.target.value.trim().toLowerCase();
+    $go.hidden = _state.query.length < 2;
+    if (_state.query.length < 2 && _state.repoSearch) {
+      _state.repoSearch = null;
+      paintRepoSection(host);
+    }
     paint(host);
   });
+
+  $input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && _state.query.length >= 2) {
+      e.preventDefault();
+      triggerRepoSearch(host);
+    }
+  });
+
+  $go.addEventListener("click", () => triggerRepoSearch(host));
 
   host.querySelector("#apps-cats").addEventListener("click", (e) => {
     const btn = e.target.closest(".cat-chip");
@@ -105,10 +135,28 @@ function wire(host) {
   });
 }
 
+async function triggerRepoSearch(host) {
+  const q = _state.query;
+  if (q.length < 2 || _state.repoSearching) return;
+  _state.repoSearching = true;
+  paintRepoSection(host, { loading: true });
+  try {
+    const res = await _state.invoke("app_search", { query: q });
+    _state.repoSearch = res;
+  } catch (err) {
+    _state.repoSearch = { query: q, native: [], flatpak: [], error: String(err?.message || err) };
+  } finally {
+    _state.repoSearching = false;
+    paintRepoSection(host);
+  }
+}
+
 function paint(host) {
-  const grid = host.querySelector("#apps-grid");
+  const grid  = host.querySelector("#apps-grid");
   const empty = host.querySelector("#apps-empty");
+  const count = host.querySelector("#apps-curated-count");
   const apps = filterApps(_state);
+  count.textContent = `${apps.length} / ${_state.cat.apps.length}`;
   if (apps.length === 0) {
     grid.innerHTML = "";
     empty.hidden = false;
@@ -116,6 +164,86 @@ function paint(host) {
   }
   empty.hidden = true;
   grid.innerHTML = apps.map(a => appCard(a, _state.cat)).join("");
+}
+
+function paintRepoSection(host, opts = {}) {
+  const sec = host.querySelector("#apps-repo-section");
+  if (!sec) return;
+  if (opts.loading) {
+    sec.hidden = false;
+    sec.innerHTML = `
+      <div class="apps-section-head"><span>Repo Sonuçları</span><span class="muted">aranıyor…</span></div>
+      <div class="repo-search-loading">
+        <span class="loader"></span>
+        <span>“${esc(_state.query)}” için repo'lar taranıyor…</span>
+      </div>
+    `;
+    return;
+  }
+  const r = _state.repoSearch;
+  if (!r) { sec.hidden = true; sec.innerHTML = ""; return; }
+
+  sec.hidden = false;
+  if (r.error) {
+    sec.innerHTML = `
+      <div class="apps-section-head"><span>Repo Sonuçları</span></div>
+      <div class="err">repo arama hatası: ${esc(r.error)}</div>
+    `;
+    return;
+  }
+
+  const nativeCount  = (r.native || []).length;
+  const flatpakCount = (r.flatpak || []).length;
+  const total = nativeCount + flatpakCount;
+
+  if (total === 0) {
+    sec.innerHTML = `
+      <div class="apps-section-head"><span>Repo Sonuçları</span></div>
+      <div class="apps-empty">
+        <p>“${esc(r.query)}” için hiçbir repo'da eşleşme yok (${r.elapsed_ms} ms tarama).</p>
+      </div>
+    `;
+    return;
+  }
+
+  sec.innerHTML = `
+    <div class="apps-section-head">
+      <span>Repo Sonuçları</span>
+      <span class="muted">${total} eşleşme · ${r.elapsed_ms} ms${r.truncated ? ` · ilk ${r.limit} kayıt` : ""}</span>
+    </div>
+    ${nativeCount > 0 ? `
+      <div class="repo-results-group">
+        <h4 class="repo-results-title">${esc((r.native_source || "").toUpperCase())} (${nativeCount})</h4>
+        <div class="repo-results-grid">${r.native.map(repoHitCard).join("")}</div>
+      </div>` : ""}
+    ${flatpakCount > 0 ? `
+      <div class="repo-results-group">
+        <h4 class="repo-results-title">FLATPAK (${flatpakCount})</h4>
+        <div class="repo-results-grid">${r.flatpak.map(repoHitCard).join("")}</div>
+      </div>` : ""}
+  `;
+}
+
+function repoHitCard(h) {
+  const colorByKind = {
+    apt: "#ff0099", dnf: "#00f0ff", pacman: "#b400ff",
+    zypper: "#ffd400", flatpak: "#66ff99",
+  };
+  const color = colorByKind[h.source] || "#00f0ff";
+  const title = h.label || h.name;
+  const subtitle = h.label ? h.name : "";
+  return `
+    <article class="repo-hit fade-in" style="--c:${esc(color)}">
+      <header class="repo-hit-head">
+        <span class="repo-hit-source">${esc(h.source.toUpperCase())}${h.remote ? " · " + esc(h.remote) : ""}</span>
+        ${h.version ? `<span class="repo-hit-ver">${esc(h.version)}</span>` : ""}
+      </header>
+      <h5 class="repo-hit-title">${esc(title)}</h5>
+      ${subtitle ? `<div class="repo-hit-id">${esc(subtitle)}</div>` : ""}
+      ${h.summary ? `<p class="repo-hit-desc">${esc(h.summary)}</p>` : ""}
+      <button class="btn install-btn repo-hit-install" disabled title="yakında — Faz 7'de polkit ile">▶ KUR</button>
+    </article>
+  `;
 }
 
 function filterApps(state) {

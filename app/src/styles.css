@@ -553,10 +553,161 @@ button { font: inherit; cursor: pointer; }
   box-shadow: 0 0 16px color-mix(in srgb, var(--c, var(--pink)) 50%, transparent);
 }
 
+.apps-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--cyan);
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
+  text-transform: uppercase;
+  margin: 6px 0 12px;
+}
+
 .apps-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 14px;
+}
+
+/* search-go butonu — input içinde sağda */
+.search { position: relative; }
+.search-go {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  padding: 6px 10px;
+}
+.search input { padding-right: 180px; }
+
+/* repo search bölümü */
+.repo-search-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 16px;
+  border: 1px solid var(--line-2);
+  background: rgba(10, 10, 16, 0.5);
+  font-family: var(--f-body);
+  font-size: 13px;
+  color: var(--fg-dim);
+  margin-bottom: 18px;
+}
+.repo-search-loading .loader { width: 22px; height: 22px; }
+
+.repo-results-group { margin: 14px 0 22px; }
+.repo-results-title {
+  font-family: var(--f-display);
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  margin: 6px 0 10px;
+  color: #fff;
+}
+.repo-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+}
+.repo-hit {
+  position: relative;
+  border: 1px solid var(--line-2);
+  border-left: 3px solid var(--c);
+  background: rgba(10, 10, 16, 0.5);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s ease;
+}
+.repo-hit:hover { border-color: var(--c); }
+.repo-hit-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.repo-hit-source {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--c);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.repo-hit-ver {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+.repo-hit-title {
+  font-family: var(--f-display);
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  margin: 2px 0 2px;
+  color: #fff;
+}
+.repo-hit-id {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  color: var(--fg-muted);
+  margin-bottom: 4px;
+}
+.repo-hit-desc {
+  font-family: var(--f-body);
+  font-size: 12.5px;
+  color: #b8b8c4;
+  margin: 4px 0 10px;
+  line-height: 1.45;
+  flex: 1;
+}
+.repo-hit-install {
+  align-self: flex-start;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  padding: 6px 12px;
+}
+
+/* storage / smart */
+.storage-smart {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+.storage-smart-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.storage-smart-tag {
+  font-family: var(--f-mono);
+  font-size: 9px;
+  letter-spacing: 0.32em;
+  color: var(--fg-muted);
+}
+.storage-smart-err {
+  margin-top: 10px;
+  font-family: var(--f-body);
+  font-size: 12.5px;
+  color: var(--yellow);
+  border-left: 2px solid var(--yellow);
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--yellow) 6%, transparent);
+}
+.storage-smart-none {
+  margin-top: 10px;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--fg-muted);
+}
+.storage-smart-none code {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1px 5px;
+  font-family: var(--f-mono);
 }
 
 .app-card {
