@@ -8,7 +8,14 @@ import { renderTarama }       from "./pages/tarama.js";
 import { renderPaketler }     from "./pages/paketler.js";
 import { renderOptimizasyon } from "./pages/optimizasyon.js";
 import { renderRepolar }      from "./pages/repolar.js";
+import { renderAyarlar }      from "./pages/ayarlar.js";
 import { renderHakkinda }     from "./pages/hakkinda.js";
+import { settings }           from "./settings.js";
+import { toast }              from "./toast.js";
+import { palette }            from "./palette.js";
+
+// settings yan etki: theme/font/zoom uygulansın
+settings.apply?.();
 
 let CATALOG_CACHE = null;
 async function loadCatalog() {
@@ -261,15 +268,25 @@ const invoke = async (cmd) => {
 };
 
 const ROUTES = {
-  sistem:       { label: "SİSTEM",       render: renderSistem },
-  donanim:      { label: "DONANIM",      render: renderDonanim },
-  uygulamalar:  { label: "UYGULAMALAR",  render: renderUygulamalar },
-  tarama:       { label: "TARAMA",       render: renderTarama },
-  paketler:     { label: "PAKETLER",     render: renderPaketler },
-  optimizasyon: { label: "OPTİMİZASYON", render: renderOptimizasyon },
-  repolar:      { label: "REPOLAR",      render: renderRepolar },
-  hakkinda:     { label: "HAKKINDA",     render: renderHakkinda },
+  sistem:       { label: "Sistem",       render: renderSistem,       glyph: "▤" },
+  donanim:      { label: "Donanım",      render: renderDonanim,      glyph: "⚙" },
+  uygulamalar:  { label: "Uygulamalar",  render: renderUygulamalar,  glyph: "▥" },
+  tarama:       { label: "Tarama",       render: renderTarama,       glyph: "▮" },
+  paketler:     { label: "Paketler",     render: renderPaketler,     glyph: "⊞" },
+  optimizasyon: { label: "Optimizasyon", render: renderOptimizasyon, glyph: "⚡" },
+  repolar:      { label: "Repolar",      render: renderRepolar,      glyph: "≡" },
+  ayarlar:      { label: "Ayarlar",      render: renderAyarlar,      glyph: "▣" },
+  hakkinda:     { label: "Hakkında",     render: renderHakkinda,     glyph: "∞" },
 };
+
+palette.register(Object.entries(ROUTES).map(([id, r]) => ({
+  id: `route:${id}`,
+  label: r.label,
+  hint: "bölüme git",
+  group: "Bölümler",
+  glyph: r.glyph,
+  action: () => { history.replaceState(null, "", `#${id}`); navigate(id); },
+})));
 
 const $page    = document.getElementById("page");
 const $tag     = document.getElementById("brand-tag");
@@ -286,6 +303,7 @@ const navigate = async (route) => {
   current = route;
   setActiveNav(route);
   $page.innerHTML = `<div class="loading"><span class="loader"></span><span>${ROUTES[route].label} yükleniyor…</span></div>`;
+  $page.__invoke = invoke;
   try {
     await ROUTES[route].render($page, { invoke });
   } catch (err) {
