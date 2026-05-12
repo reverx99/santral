@@ -234,9 +234,9 @@ button { font: inherit; cursor: pointer; }
 }
 .page-num {
   font-family: var(--f-mono);
-  font-size: 12px; letter-spacing: 0.18em;
+  font-size: 12px; letter-spacing: 0.06em;
   color: var(--cyan);
-  text-shadow: 0 0 6px rgba(0,240,255,0.5);
+  text-shadow: 0 0 4px rgba(0,240,255,0.35);
 }
 .page-actions { display: flex; gap: 8px; }
 
@@ -278,9 +278,9 @@ button { font: inherit; cursor: pointer; }
 .card-head {
   display: flex; align-items: center; justify-content: space-between;
   font-family: var(--f-mono);
-  font-size: 11px; letter-spacing: 0.18em;
+  font-size: 11px; letter-spacing: 0.08em;
   color: var(--c, var(--cyan));
-  text-shadow: 0 0 6px color-mix(in srgb, var(--c, var(--cyan)) 60%, transparent);
+  text-shadow: 0 0 4px color-mix(in srgb, var(--c, var(--cyan)) 45%, transparent);
   margin-bottom: 10px;
   text-transform: uppercase;
 }
@@ -380,19 +380,21 @@ button { font: inherit; cursor: pointer; }
 }
 .section-head {
   display: flex; align-items: center; gap: 12px;
-  font-family: var(--f-mono);
-  font-size: 12px; letter-spacing: 0.18em;
-  color: var(--cyan);
-  text-shadow: 0 0 6px rgba(0,240,255,0.5);
+  font-family: var(--f-body);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #d8d8e2;
+  text-shadow: none;
   margin-bottom: 14px;
-  text-transform: uppercase;
+  text-transform: none;
 }
 .section-head::after {
   content: "";
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, var(--cyan), transparent);
-  opacity: 0.4;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--cyan) 35%, transparent), transparent);
+  opacity: 0.5;
 }
 
 /* about page list */
@@ -557,12 +559,13 @@ button { font: inherit; cursor: pointer; }
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  font-family: var(--f-mono);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  color: var(--cyan);
-  text-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
-  text-transform: uppercase;
+  font-family: var(--f-body);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #d8d8e2;
+  text-shadow: none;
+  text-transform: none;
   margin: 6px 0 12px;
 }
 
@@ -1613,21 +1616,23 @@ button { font: inherit; cursor: pointer; }
 }
 .repo-url {
   font-family: var(--f-mono);
-  font-size: 12px;
-  color: #9090a4;
+  font-size: 13px;
+  color: #b8b8c8;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+  letter-spacing: 0.01em;
 }
 .repo-source {
   font-family: var(--f-body);
-  font-size: 11.5px;
-  color: var(--fg-muted);
+  font-size: 12.5px;
+  color: #9090a4;
 }
 .repo-source .mono {
   font-family: var(--f-mono);
-  color: var(--fg-dim);
+  color: #c0c0cc;
+  letter-spacing: 0.01em;
 }
 
 .repo-card-actions {
@@ -2030,12 +2035,13 @@ button { font: inherit; cursor: pointer; }
   border-bottom: 1px solid var(--line);
 }
 .task-drawer-title {
-  font-family: var(--f-mono);
-  font-size: 11px;
-  letter-spacing: 0.28em;
+  font-family: var(--f-body);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   color: var(--accent);
-  text-shadow: 0 0 6px color-mix(in srgb, var(--accent) 60%, transparent);
-  text-transform: uppercase;
+  text-shadow: none;
+  text-transform: none;
   flex: 1;
 }
 .task-drawer-mode {
