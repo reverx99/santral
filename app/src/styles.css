@@ -238,6 +238,19 @@ button { font: inherit; cursor: pointer; }
   color: var(--cyan);
   text-shadow: 0 0 4px rgba(0,240,255,0.35);
 }
+
+.page-lede {
+  font-family: var(--f-body);
+  font-size: 14px;
+  line-height: 1.55;
+  color: #c8c8d4;
+  max-width: 80ch;
+  margin: 0 0 22px;
+}
+.page-lede strong {
+  color: var(--accent);
+  font-weight: 600;
+}
 .page-actions { display: flex; gap: 8px; }
 
 /* primitives */

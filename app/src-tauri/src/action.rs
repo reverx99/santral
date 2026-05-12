@@ -493,6 +493,28 @@ fn resolve_command(req: &ActionRequest) -> Result<Resolved, String> {
             ], false))
         }
 
+        // ============= SÜRÜCÜLER & MULTIMEDIA =============
+
+        /// Ubuntu/Mint: en uygun NVIDIA sürücüsünü otomatik seçip kurar.
+        "drivers.ubuntu-autoinstall" => Ok(pkexec_wrap(vec![
+            "env".into(), "DEBIAN_FRONTEND=noninteractive".into(),
+            "ubuntu-drivers".into(), "autoinstall".into(),
+        ], true)),
+
+        /// Fedora: RPM Fusion (free + nonfree) repo etkinleştir. URL'ler
+        /// sabit; sadece Fedora versiyon numarası /etc/os-release'ten okunur.
+        /// NVIDIA, codecs ve diğer non-free paketlerin önkoşulu.
+        "rpmfusion.enable" => {
+            let version = fedora_version()
+                .ok_or("Fedora sürüm numarası okunamadı (/etc/os-release)")?;
+            let free    = format!("https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{version}.noarch.rpm");
+            let nonfree = format!("https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{version}.noarch.rpm");
+            Ok(pkexec_wrap(vec![
+                "dnf".into(), "install".into(), "-y".into(),
+                free, nonfree,
+            ], true))
+        }
+
         // ============= TEST =============
         "noop.echo" => {
             let msg = req.args.first().cloned().unwrap_or_else(|| "merhaba".into());
@@ -669,6 +691,22 @@ fn check_under_dir(p: &str, base: &str) -> Result<(), String> {
         return Err("dosya adında geçersiz karakter".into());
     }
     Ok(())
+}
+
+/// /etc/os-release'ten Fedora sürüm numarasını okur (40, 41, ...).
+fn fedora_version() -> Option<u32> {
+    let content = std::fs::read_to_string("/etc/os-release").ok()?;
+    for line in content.lines() {
+        if let Some(v) = line.strip_prefix("VERSION_ID=") {
+            let v = v.trim().trim_matches('"').trim_matches('\'');
+            if let Ok(n) = v.parse::<u32>() {
+                if (10..=200).contains(&n) {
+                    return Some(n);
+                }
+            }
+        }
+    }
+    None
 }
 
 fn check_ppa(s: &str) -> Result<(), String> {

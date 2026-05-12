@@ -8,6 +8,7 @@ import { renderTarama }       from "./pages/tarama.js";
 import { renderPaketler }     from "./pages/paketler.js";
 import { renderOptimizasyon } from "./pages/optimizasyon.js";
 import { renderRepolar }      from "./pages/repolar.js";
+import { renderSuruculer }    from "./pages/suruculer.js";
 import { renderAyarlar }      from "./pages/ayarlar.js";
 import { renderHakkinda }     from "./pages/hakkinda.js";
 import { settings }           from "./settings.js";
@@ -571,6 +572,7 @@ const ROUTES = {
   paketler:     { label: "Paketler",     render: renderPaketler,     glyph: "⊞" },
   optimizasyon: { label: "Optimizasyon", render: renderOptimizasyon, glyph: "⚡" },
   repolar:      { label: "Repolar",      render: renderRepolar,      glyph: "≡" },
+  suruculer:    { label: "Sürücüler",    render: renderSuruculer,    glyph: "◈" },
   ayarlar:      { label: "Ayarlar",      render: renderAyarlar,      glyph: "▣" },
   hakkinda:     { label: "Hakkında",     render: renderHakkinda,     glyph: "∞" },
 };

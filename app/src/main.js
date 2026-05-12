@@ -15,6 +15,7 @@ import { renderTarama }       from "./pages/tarama.js";
 import { renderPaketler }     from "./pages/paketler.js";
 import { renderOptimizasyon } from "./pages/optimizasyon.js";
 import { renderRepolar }      from "./pages/repolar.js";
+import { renderSuruculer }    from "./pages/suruculer.js";
 import { renderAyarlar }      from "./pages/ayarlar.js";
 import { renderHakkinda }     from "./pages/hakkinda.js";
 
@@ -26,6 +27,7 @@ const ROUTES = {
   paketler:     { label: "Paketler",     render: renderPaketler,     num: "// 05", glyph: "⊞", refreshable: false },
   optimizasyon: { label: "Optimizasyon", render: renderOptimizasyon, num: "// 06", glyph: "⚡", refreshable: false },
   repolar:      { label: "Repolar",      render: renderRepolar,      num: "// 07", glyph: "≡", refreshable: false },
+  suruculer:    { label: "Sürücüler",    render: renderSuruculer,    num: "// 08", glyph: "◈", refreshable: false },
   ayarlar:      { label: "Ayarlar",      render: renderAyarlar,      num: "// 98", glyph: "▣", refreshable: false },
   hakkinda:     { label: "Hakkında",     render: renderHakkinda,     num: "// 99", glyph: "∞", refreshable: false },
 };
