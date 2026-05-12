@@ -234,6 +234,56 @@ fn resolve_command(req: &ActionRequest) -> Result<Resolved, String> {
             ], false)) // snap kendisi paket yöneticisi değil, kilide muaf
         }
 
+        // ============= NATIVE REMOVE / UNINSTALL (root) =============
+
+        "apt.remove" => {
+            let pkg = req.args.first().ok_or("eksik paket adı")?;
+            check_pkgname(pkg)?;
+            Ok(pkexec_wrap(vec![
+                "env".into(), "DEBIAN_FRONTEND=noninteractive".into(),
+                "apt-get".into(), "remove".into(), "-y".into(), pkg.clone(),
+            ], true))
+        }
+        "apt.purge" => {
+            let pkg = req.args.first().ok_or("eksik paket adı")?;
+            check_pkgname(pkg)?;
+            Ok(pkexec_wrap(vec![
+                "env".into(), "DEBIAN_FRONTEND=noninteractive".into(),
+                "apt-get".into(), "purge".into(), "-y".into(), pkg.clone(),
+            ], true))
+        }
+        "dnf.remove" => {
+            let pkg = req.args.first().ok_or("eksik paket adı")?;
+            check_pkgname(pkg)?;
+            Ok(pkexec_wrap(vec![
+                "dnf".into(), "remove".into(), "-y".into(), pkg.clone(),
+            ], true))
+        }
+        "pacman.remove" => {
+            let pkg = req.args.first().ok_or("eksik paket adı")?;
+            check_pkgname(pkg)?;
+            // -R: kaldır, -n: yapılandırma dosyalarını sakla yerine sil,
+            // -s: artık gerek duyulmayan bağımlılıkları da kaldır.
+            Ok(pkexec_wrap(vec![
+                "pacman".into(), "-Rns".into(), "--noconfirm".into(), pkg.clone(),
+            ], true))
+        }
+        "zypper.remove" => {
+            let pkg = req.args.first().ok_or("eksik paket adı")?;
+            check_pkgname(pkg)?;
+            Ok(pkexec_wrap(vec![
+                "zypper".into(), "remove".into(), "-y".into(),
+                "--clean-deps".into(), pkg.clone(),
+            ], true))
+        }
+        "snap.remove" => {
+            let pkg = req.args.first().ok_or("eksik paket adı")?;
+            check_pkgname(pkg)?;
+            Ok(pkexec_wrap(vec![
+                "snap".into(), "remove".into(), pkg.clone(),
+            ], false))
+        }
+
         // ============= UPGRADE / SYSTEM UPDATE (root) =============
 
         "apt.upgrade" => Ok(pkexec_wrap(vec![

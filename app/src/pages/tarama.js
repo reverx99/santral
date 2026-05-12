@@ -154,10 +154,21 @@ function scannerCard(s, cat) {
         : `<span class="chip bad">× KAYNAK YOK</span>`);
 
   const installKind = scannerInstallKind(s, cat);
+  const removeKind = scannerRemoveKind(s, cat);
   const action = s.installed
-    ? (s.needs_root
-        ? `<label class="scan-toggle-wrap" title="seçim için işaretle"><input type="checkbox" class="scan-toggle"/><span class="scan-toggle-box"></span><span>SEÇ</span></label>`
-        : `<label class="scan-toggle-wrap"><input type="checkbox" class="scan-toggle"/><span class="scan-toggle-box"></span><span>SEÇ</span></label>`)
+    ? `
+        <label class="scan-toggle-wrap" title="seçim için işaretle">
+          <input type="checkbox" class="scan-toggle"/>
+          <span class="scan-toggle-box"></span>
+          <span>SEÇ</span>
+        </label>
+        ${removeKind ? `
+          <button class="btn install-btn off scan-remove"
+            data-scanner-remove-kind="${esc(removeKind.kind)}"
+            data-scanner-remove-pkg="${esc(removeKind.pkg)}"
+            data-scanner-remove-label="${esc(s.name)} kaldır"
+            title="${esc(s.name)} kaldır (${esc(removeKind.source.toUpperCase())})">× Kaldır</button>` : ""}
+      `
     : (installKind
         ? `<button class="btn install-btn" data-scanner-install-kind="${esc(installKind.kind)}" data-scanner-install-pkg="${esc(installKind.pkg)}" data-scanner-install-label="${esc(s.name)} kurulumu">▶ KUR <small>(${esc(installKind.source.toUpperCase())})</small></button>`
         : `<button class="btn install-btn off" disabled title="bu sistemde kurulamıyor">× KAYNAK YOK</button>`);
@@ -185,6 +196,21 @@ function scannerCard(s, cat) {
 
 /** Tarayıcının kurulumu için uygun (kind, pkg, source) — preferred PM önce. */
 function scannerInstallKind(s, cat) {
+  return scannerSourceFor(s, cat, {
+    apt: "apt.install", dnf: "dnf.install",
+    pacman: "pacman.install", zypper: "zypper.install",
+    flatpak: "flatpak.user.install", snap: "snap.install",
+  });
+}
+/** Aynı seçim ama kaldır kind'larıyla. */
+function scannerRemoveKind(s, cat) {
+  return scannerSourceFor(s, cat, {
+    apt: "apt.remove", dnf: "dnf.remove",
+    pacman: "pacman.remove", zypper: "zypper.remove",
+    flatpak: "flatpak.user.uninstall", snap: "snap.remove",
+  });
+}
+function scannerSourceFor(s, cat, kindMap) {
   const detected = cat.detected_sources || [];
   const preferred = cat.preferred_source;
   const sources = Object.keys(s.sources || {});
@@ -196,11 +222,6 @@ function scannerInstallKind(s, cat) {
      src === "flatpak" ? 2 : 3);
   const sorted = [...installable].sort((a, b) => order(a) - order(b));
   const src = sorted[0];
-  const kindMap = {
-    apt: "apt.install", dnf: "dnf.install",
-    pacman: "pacman.install", zypper: "zypper.install",
-    flatpak: "flatpak.user.install", snap: "snap.install",
-  };
   return { kind: kindMap[src], pkg: s.sources[src], source: src };
 }
 
@@ -210,6 +231,16 @@ function wireScannerInstalls(host) {
       const kind = btn.dataset.scannerInstallKind;
       const pkg = btn.dataset.scannerInstallPkg;
       const label = btn.dataset.scannerInstallLabel || pkg;
+      try { await tasks.start({ kind, args: [pkg], label }); } catch {}
+    });
+  });
+  host.querySelectorAll("[data-scanner-remove-kind]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const kind = btn.dataset.scannerRemoveKind;
+      const pkg = btn.dataset.scannerRemovePkg;
+      const label = btn.dataset.scannerRemoveLabel || pkg;
+      const ok = confirm(`"${pkg}" tarayıcısını kaldır?\n\nKomut: ${kind} ${pkg}`);
+      if (!ok) return;
       try { await tasks.start({ kind, args: [pkg], label }); } catch {}
     });
   });

@@ -22,6 +22,15 @@ const SOURCE_KIND = {
   snap:    "snap.install",
 };
 
+const SOURCE_REMOVE_KIND = {
+  apt:     "apt.remove",
+  dnf:     "dnf.remove",
+  pacman:  "pacman.remove",
+  zypper:  "zypper.remove",
+  flatpak: "flatpak.user.uninstall",
+  snap:    "snap.remove",
+};
+
 const SOURCE_NOTE = {
   flatpak: "kullanıcı (--user, root yok)",
   apt:     "sistem geneli (parola sorulur)",
@@ -203,6 +212,14 @@ function wireFlatpakButtons(scope) {
       const kind  = btn.dataset.installKind;
       const pkg   = btn.dataset.installPkg;
       const label = btn.dataset.installLabel || pkg;
+      const needsConfirm = btn.dataset.installConfirm === "1";
+      if (needsConfirm) {
+        const ok = confirm(
+          `"${pkg}" paketini kaldıracak. Devam edilsin mi?\n\n` +
+          `Komut: ${kind} ${pkg}`
+        );
+        if (!ok) return;
+      }
       try {
         await tasks.start({ kind, args: [pkg], label });
       } catch {}
@@ -400,25 +417,58 @@ function installGroup(app, installable, preferred) {
   const rest = sorted.slice(1);
 
   const mainBtn = installBtnHtml(app, main, true);
-  if (rest.length === 0) {
+  // Tüm sources için Kaldır seçenekleri de menüde gösterilir.
+  // Yalnız tek kaynak varsa bile (rest.length === 0) Kaldır olabilir.
+  const installAlts = rest.map((s) => menuItem({
+    kind: "install", source: s, app, source_kind: SOURCE_KIND[s],
+  })).join("");
+  const removeItems = installable.map((s) => menuItem({
+    kind: "remove", source: s, app, source_kind: SOURCE_REMOVE_KIND[s],
+  })).join("");
+
+  // Eğer alt-install yok ve sadece kaldır seçenekleri varsa, gene dropdown göster.
+  if (installAlts === "" && removeItems === "") {
     return `<div class="install-group">${mainBtn}</div>`;
   }
-  const menuItems = rest.map((s) => `
-    <li>
-      <button class="install-src-item" ${dataAttrs(app, s)} type="button" role="menuitem">
-        <span class="install-src-label">${esc(SOURCE_LABELS[s])}</span>
-        <span class="install-src-note">${esc(SOURCE_NOTE[s] || "")}</span>
-        <code class="install-src-pkg">${esc(app.sources[s])}</code>
-      </button>
-    </li>
-  `).join("");
 
   return `
     <div class="install-group">
       ${mainBtn}
       <button class="btn install-btn-arrow" type="button" aria-label="Diğer kaynaklar" aria-haspopup="menu" data-install-toggle>▾</button>
-      <ul class="install-sources" hidden role="menu">${menuItems}</ul>
+      <ul class="install-sources" hidden role="menu">
+        ${installAlts ? `
+          <li class="install-src-section">Diğer kaynaklarla kur</li>
+          ${installAlts}
+        ` : ""}
+        ${removeItems ? `
+          <li class="install-src-section install-src-section-remove">Kaldır</li>
+          ${removeItems}
+        ` : ""}
+      </ul>
     </div>
+  `;
+}
+
+function menuItem({ kind, source, app, source_kind }) {
+  const isRemove = kind === "remove";
+  const note = SOURCE_NOTE[source] || "";
+  const label = `${app.name} (${SOURCE_LABELS[source]})`;
+  const actionLabel = isRemove ? `${label} — kaldır` : label;
+  const cls = isRemove ? "install-src-item install-src-item-remove" : "install-src-item";
+  const prefix = isRemove ? "× Kaldır" : "▶ Kur";
+  return `
+    <li>
+      <button class="${cls}"
+        data-install-kind="${esc(source_kind)}"
+        data-install-pkg="${esc(app.sources[source])}"
+        data-install-label="${esc(actionLabel)}"
+        data-install-confirm="${isRemove ? "1" : "0"}"
+        type="button" role="menuitem">
+        <span class="install-src-label">${esc(prefix)} · ${esc(SOURCE_LABELS[source])}</span>
+        <span class="install-src-note">${esc(note)}</span>
+        <code class="install-src-pkg">${esc(app.sources[source])}</code>
+      </button>
+    </li>
   `;
 }
 
