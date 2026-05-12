@@ -1676,6 +1676,57 @@ button { font: inherit; cursor: pointer; }
   font-size: 13px;
 }
 
+/* ============== updates banner ============== */
+
+.updates-banner {
+  margin-bottom: 18px;
+  border: 1px solid var(--line-2);
+  background: rgba(10, 10, 16, 0.55);
+  padding: 14px 18px;
+}
+.updates-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.updates-glyph {
+  font-family: var(--f-display);
+  font-size: 28px;
+  color: var(--accent);
+  text-shadow: 0 0 12px var(--accent);
+  line-height: 1;
+}
+.updates-glyph.good { color: var(--green); text-shadow: 0 0 12px var(--green); }
+.updates-glyph.warn { color: var(--yellow); text-shadow: 0 0 12px var(--yellow); }
+.updates-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--f-body);
+  font-size: 14px;
+}
+.updates-text strong {
+  color: #fff;
+  font-weight: 600;
+}
+.updates-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.task-cancel {
+  color: var(--red) !important;
+  border-color: color-mix(in srgb, var(--red) 50%, transparent) !important;
+}
+.task-cancel:hover {
+  color: #000 !important;
+  background: var(--red) !important;
+  border-color: var(--red) !important;
+}
+
 /* ============== task drawer ============== */
 
 .task-drawer {

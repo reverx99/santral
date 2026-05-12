@@ -114,6 +114,10 @@ function paint(state) {
   list.querySelectorAll("[data-clear]").forEach((b) => {
     b.addEventListener("click", () => tasks.clear(Number(b.dataset.clear)));
   });
+  // iptal butonları
+  list.querySelectorAll("[data-cancel]").forEach((b) => {
+    b.addEventListener("click", () => tasks.cancel(Number(b.dataset.cancel)));
+  });
 }
 
 function renderTask(t) {
@@ -123,18 +127,24 @@ function renderTask(t) {
     : `${Math.max(0, Math.floor((Date.now() / 1000) - t.started_at))}s…`;
   const open = expanded.has(t.id);
   const lines = open ? tasks.getLogs(t.id) : [];
+  const isRunning = t.status === "running" || t.status === "queued";
 
   return `
     <li class="task-item ${t.status}">
       <div class="task-item-row">
         <span class="chip ${sm.cls}">${esc(sm.txt.toUpperCase())}</span>
         ${t.dry_run ? `<span class="chip warn">DRY-RUN</span>` : ""}
+        ${t.needs_root ? `<span class="chip" title="root yetkisi (pkexec)">⌐</span>` : ""}
         <span class="task-item-label" title="${esc(t.command)}">${esc(t.label || t.kind)}</span>
         <span class="task-item-time muted">${esc(elapsed)}</span>
         <button class="task-item-btn" data-log-toggle="${t.id}" title="logu ${open ? "kapat" : "göster"}">
           ${open ? "▾" : "▸"} log ${t.log_count > 0 ? `(${t.log_count})` : ""}
         </button>
-        <button class="task-item-btn" data-clear="${t.id}" title="kayıttan sil">×</button>
+        ${isRunning ? `
+          <button class="task-item-btn task-cancel" data-cancel="${t.id}" title="task'ı iptal et (SIGTERM)">⨯ iptal</button>
+        ` : `
+          <button class="task-item-btn" data-clear="${t.id}" title="kayıttan sil">×</button>
+        `}
       </div>
       ${open ? `
         <div class="task-item-cmd"><code>${esc(t.command)}</code></div>

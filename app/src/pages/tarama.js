@@ -3,6 +3,18 @@
 // polkit + canlı status bar + ham komut paneliyle bağlanacak).
 
 import { pageHead, esc } from "../util.js";
+import { tasks } from "../tasks.js";
+
+const SCANNER_KIND = {
+  chkrootkit:  "scanner.chkrootkit",
+  rkhunter:    "scanner.rkhunter",
+  clamav:      "scanner.clamav",
+  maldet:      "scanner.maldet",
+  lynis:       "scanner.lynis",
+  aide:        "scanner.aide",
+  debsums:     "scanner.debsums",
+  "rpm-verify": "scanner.rpm-verify",
+};
 
 const SOURCE_LABELS = {
   apt: "APT", dnf: "DNF", pacman: "PACMAN", zypper: "ZYPPER",
@@ -102,6 +114,7 @@ function paint(host) {
       updateSummary(host);
     });
   });
+  wireScannerInstalls(grid);
   updateSummary(host);
 }
 
@@ -140,12 +153,13 @@ function scannerCard(s, cat) {
         ? `<span class="chip warn">KURULUM GEREKLİ</span>`
         : `<span class="chip bad">× KAYNAK YOK</span>`);
 
+  const installKind = scannerInstallKind(s, cat);
   const action = s.installed
     ? (s.needs_root
         ? `<label class="scan-toggle-wrap" title="seçim için işaretle"><input type="checkbox" class="scan-toggle"/><span class="scan-toggle-box"></span><span>SEÇ</span></label>`
         : `<label class="scan-toggle-wrap"><input type="checkbox" class="scan-toggle"/><span class="scan-toggle-box"></span><span>SEÇ</span></label>`)
-    : (s.installable
-        ? `<button class="btn install-btn" disabled title="yakında — sonraki fazda">▶ KUR</button>`
+    : (installKind
+        ? `<button class="btn install-btn" data-scanner-install-kind="${esc(installKind.kind)}" data-scanner-install-pkg="${esc(installKind.pkg)}" data-scanner-install-label="${esc(s.name)} kurulumu">▶ KUR <small>(${esc(installKind.source.toUpperCase())})</small></button>`
         : `<button class="btn install-btn off" disabled title="bu sistemde kurulamıyor">× KAYNAK YOK</button>`);
 
   return `
@@ -167,6 +181,38 @@ function scannerCard(s, cat) {
       <div class="src-chips scan-srcs">${sourceChips}</div>
     </article>
   `;
+}
+
+/** Tarayıcının kurulumu için uygun (kind, pkg, source) — preferred PM önce. */
+function scannerInstallKind(s, cat) {
+  const detected = cat.detected_sources || [];
+  const preferred = cat.preferred_source;
+  const sources = Object.keys(s.sources || {});
+  const installable = sources.filter((src) => detected.includes(src));
+  if (installable.length === 0) return null;
+  const order = (src) =>
+    (src === preferred ? 0 :
+     ["apt","dnf","pacman","zypper"].includes(src) ? 1 :
+     src === "flatpak" ? 2 : 3);
+  const sorted = [...installable].sort((a, b) => order(a) - order(b));
+  const src = sorted[0];
+  const kindMap = {
+    apt: "apt.install", dnf: "dnf.install",
+    pacman: "pacman.install", zypper: "zypper.install",
+    flatpak: "flatpak.user.install", snap: "snap.install",
+  };
+  return { kind: kindMap[src], pkg: s.sources[src], source: src };
+}
+
+function wireScannerInstalls(host) {
+  host.querySelectorAll("[data-scanner-install-kind]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const kind = btn.dataset.scannerInstallKind;
+      const pkg = btn.dataset.scannerInstallPkg;
+      const label = btn.dataset.scannerInstallLabel || pkg;
+      try { await tasks.start({ kind, args: [pkg], label }); } catch {}
+    });
+  });
 }
 
 function updateSummary(host) {
@@ -194,8 +240,27 @@ function updateSummary(host) {
         <div class="scan-meta-row muted">karttaki "SEÇ" kutucuğunu işaretleyerek tarayıcı topla.</div>
       `}
     </div>
-    <button class="btn btn-primary scan-start" ${n === 0 ? "disabled" : ""} title="yakında — polkit + canlı log fazıyla">
+    <button class="btn btn-primary scan-start" id="scan-start" ${n === 0 ? "disabled" : ""}>
       ▶ TARAMAYI BAŞLAT
     </button>
   `;
+
+  // Çoklu scanner sıraya sok — root gerekenler için pkexec her birinde
+  // ayrı parola sorabilir. Kullanıcıya bunu önceden bildirmek için toast yok;
+  // task drawer canlı görünüyor.
+  summary.querySelector("#scan-start")?.addEventListener("click", async () => {
+    for (const id of Array.from(_state.selected)) {
+      const s = _state.cat.scanners.find((x) => x.id === id);
+      if (!s) continue;
+      const kind = SCANNER_KIND[id];
+      if (!kind) continue;
+      try {
+        await tasks.start({
+          kind,
+          args: id === "clamav" ? [] : [],  // clamav default = $HOME
+          label: `Tarama: ${s.name}`,
+        });
+      } catch {}
+    }
+  });
 }

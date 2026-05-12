@@ -539,6 +539,26 @@ const invoke = async (cmd, args) => {
     }
     return n;
   }
+  if (cmd === "cancel_task") {
+    const t = PREVIEW_TASKS.get(args?.id);
+    if (t && (t.status === "running" || t.status === "queued")) {
+      t.status = "cancelled";
+      t.ended_at = Math.floor(Date.now() / 1000);
+      tasks.onTaskUpdate(t);
+    }
+    return true;
+  }
+  if (cmd === "check_updates") {
+    await new Promise((r) => setTimeout(r, 600));
+    return {
+      native_kind: "apt",
+      native_count: 14,
+      flatpak_count: 3,
+      snap_count: 0,
+      total: 17,
+      checked_at: Math.floor(Date.now() / 1000),
+    };
+  }
   if (!MOCK[cmd]) throw new Error("unknown command: " + cmd);
   return MOCK[cmd](args || {});
 };

@@ -5,6 +5,15 @@ import {
   esc, fmtBytes, fmtDuration, fmtPct, fmtFreq,
   usageBar, usageClass,
 } from "../util.js";
+import { tasks } from "../tasks.js";
+
+const UPGRADE_KIND = {
+  apt: "apt.upgrade", dnf: "dnf.upgrade",
+  pacman: "pacman.upgrade", zypper: "zypper.upgrade",
+};
+const NATIVE_LABEL = {
+  apt: "APT", dnf: "DNF", pacman: "Pacman", zypper: "Zypper",
+};
 
 export async function renderSistem(host, { invoke }) {
   const [distro, sys] = await Promise.all([
@@ -15,8 +24,12 @@ export async function renderSistem(host, { invoke }) {
   host.innerHTML = `
     ${pageHead({
       num: "// 01", title: "SİSTEM",
-      actions: `<button class="btn" id="refresh">⟲ YENİLE</button>`,
+      actions: `
+        <button class="btn" id="check-updates">⇪ GÜNCELLEMELERİ TARA</button>
+        <button class="btn" id="refresh">⟲ YENİLE</button>
+      `,
     })}
+    <div id="updates-banner" class="updates-banner muted" hidden></div>
 
     ${sectionHead("DİSTRO")}
     <div class="cards">
@@ -67,6 +80,86 @@ export async function renderSistem(host, { invoke }) {
 
   host.querySelector("#refresh")?.addEventListener("click", () => {
     renderSistem(host, { invoke });
+  });
+
+  host.querySelector("#check-updates")?.addEventListener("click", async () => {
+    const btn = host.querySelector("#check-updates");
+    btn.disabled = true;
+    btn.textContent = "⇪ TARANIYOR…";
+    try {
+      const upd = await invoke("check_updates");
+      paintUpdatesBanner(host, upd, distro);
+    } catch (err) {
+      paintUpdatesBanner(host, { error: String(err?.message || err) }, distro);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "⇪ GÜNCELLEMELERİ TARA";
+    }
+  });
+}
+
+function paintUpdatesBanner(host, upd, distro) {
+  const el = host.querySelector("#updates-banner");
+  if (!el) return;
+  el.hidden = false;
+  el.classList.remove("muted");
+  if (upd.error) {
+    el.innerHTML = `
+      <div class="updates-info">
+        <span class="updates-glyph">⚠</span>
+        <span><strong>Güncelleme taranamadı.</strong> ${esc(upd.error)}</span>
+      </div>
+    `;
+    return;
+  }
+  const native = upd.native_count;
+  const flatpak = upd.flatpak_count;
+  const snap = upd.snap_count;
+  const total = upd.total;
+  if (total === 0 && native != null) {
+    el.innerHTML = `
+      <div class="updates-info">
+        <span class="updates-glyph good">✓</span>
+        <span><strong>Sistem güncel.</strong> Native paket / Flatpak / Snap kuyruğunda bekleyen güncelleme yok.</span>
+      </div>
+    `;
+    return;
+  }
+  const parts = [];
+  if (native != null && native > 0) parts.push(`${native} ${NATIVE_LABEL[upd.native_kind] || upd.native_kind}`);
+  if (flatpak != null && flatpak > 0) parts.push(`${flatpak} Flatpak`);
+  if (snap != null && snap > 0) parts.push(`${snap} Snap`);
+
+  const upgradeBtns = [];
+  if (native != null && native > 0 && UPGRADE_KIND[upd.native_kind]) {
+    upgradeBtns.push(`<button class="btn btn-primary" data-upgrade="${esc(UPGRADE_KIND[upd.native_kind])}">▶ ${esc(NATIVE_LABEL[upd.native_kind])}'i yükselt</button>`);
+  }
+  if (flatpak != null && flatpak > 0) {
+    upgradeBtns.push(`<button class="btn" data-upgrade="flatpak.user.update">▶ Flatpak'ları güncelle</button>`);
+  }
+  if (snap != null && snap > 0) {
+    upgradeBtns.push(`<button class="btn" data-upgrade="snap.refresh">▶ Snap'leri tazele</button>`);
+  }
+
+  el.innerHTML = `
+    <div class="updates-info">
+      <span class="updates-glyph warn">⇪</span>
+      <div class="updates-text">
+        <strong>${total} güncelleme var.</strong>
+        <span class="muted">${esc(parts.join(" · "))}</span>
+      </div>
+      <div class="updates-actions">${upgradeBtns.join(" ")}</div>
+    </div>
+  `;
+
+  el.querySelectorAll("[data-upgrade]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const kind = btn.dataset.upgrade;
+      const label = kind === "flatpak.user.update" ? "Flatpak uygulamalarını güncelle"
+        : kind === "snap.refresh" ? "Snap paketlerini tazele"
+        : `${NATIVE_LABEL[upd.native_kind] || upd.native_kind} sistemi yükselt`;
+      try { await tasks.start({ kind, args: [], label }); } catch {}
+    });
   });
 }
 

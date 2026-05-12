@@ -107,6 +107,15 @@ class TaskManager {
     }
   }
 
+  async cancel(id) {
+    try {
+      await this.invoke("cancel_task", { id });
+      // backend status'u "cancelled" yapacak ve task:update emit edecek
+    } catch (err) {
+      toast.error("İptal başarısız", String(err?.message || err));
+    }
+  }
+
   async clear(id)         { try { await this.invoke("clear_task", { id }); } catch {} this.byId.delete(id); this.logs.delete(id); this.emit(); }
   async clearFinished()   { try { await this.invoke("clear_finished_tasks"); } catch {}
     for (const [id, t] of Array.from(this.byId.entries())) {
