@@ -13,6 +13,7 @@ mod repo_search;
 mod repos;
 mod scanner;
 mod system;
+mod updates;
 mod util;
 
 use serde::Serialize;
@@ -82,6 +83,11 @@ fn app_search(query: String) -> repo_search::SearchResults {
     repo_search::search(&query)
 }
 
+#[tauri::command]
+fn check_updates() -> updates::UpdateCheck {
+    updates::check()
+}
+
 pub fn run() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -99,6 +105,8 @@ pub fn run() {
             action::list_tasks,
             action::clear_task,
             action::clear_finished_tasks,
+            action::cancel_task,
+            check_updates,
         ])
         .run(tauri::generate_context!())
         .expect("santral: tauri runtime failed");

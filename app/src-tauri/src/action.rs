@@ -37,7 +37,7 @@ pub struct ActionRequest {
     pub label: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Task {
     pub id: u32,
     pub kind: String,
@@ -54,6 +54,9 @@ pub struct Task {
     pub exit_code: Option<i32>,
     pub log_count: u32,
     pub error: Option<String>,
+    /// Çalışan task'lar için OS PID — cancel_task SIGTERM göndermek için kullanır.
+    #[serde(default)]
+    pub pid: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -231,6 +234,142 @@ fn resolve_command(req: &ActionRequest) -> Result<Resolved, String> {
             ], false)) // snap kendisi paket yöneticisi değil, kilide muaf
         }
 
+        // ============= UPGRADE / SYSTEM UPDATE (root) =============
+
+        "apt.upgrade" => Ok(pkexec_wrap(vec![
+            "env".into(), "DEBIAN_FRONTEND=noninteractive".into(),
+            "apt-get".into(), "upgrade".into(), "-y".into(),
+        ], true)),
+        "apt.dist-upgrade" => Ok(pkexec_wrap(vec![
+            "env".into(), "DEBIAN_FRONTEND=noninteractive".into(),
+            "apt-get".into(), "dist-upgrade".into(), "-y".into(),
+        ], true)),
+        "apt.update" => Ok(pkexec_wrap(vec![
+            "apt-get".into(), "update".into(),
+        ], true)),
+        "dnf.upgrade" => Ok(pkexec_wrap(vec![
+            "dnf".into(), "upgrade".into(), "-y".into(),
+        ], true)),
+        "pacman.upgrade" => Ok(pkexec_wrap(vec![
+            "pacman".into(), "-Syu".into(), "--noconfirm".into(),
+        ], true)),
+        "zypper.upgrade" => Ok(pkexec_wrap(vec![
+            "zypper".into(), "update".into(), "-y".into(),
+        ], true)),
+        "flatpak.user.update" => Ok(Resolved {
+            program: "flatpak".into(),
+            args: vec![
+                "update".into(), "--user".into(),
+                "--noninteractive".into(), "--assumeyes".into(),
+            ],
+            needs_root: false, needs_native_lock: false,
+        }),
+        "snap.refresh" => Ok(pkexec_wrap(vec![
+            "snap".into(), "refresh".into(),
+        ], false)),
+
+        // ============= REPO ENABLE / DISABLE / REMOVE =============
+
+        "dnf.repo-enable" => {
+            let id = req.args.first().ok_or("eksik repo id")?;
+            check_repo_id(id)?;
+            Ok(pkexec_wrap(vec![
+                "dnf".into(), "config-manager".into(),
+                "--set-enabled".into(), id.clone(),
+            ], true))
+        }
+        "dnf.repo-disable" => {
+            let id = req.args.first().ok_or("eksik repo id")?;
+            check_repo_id(id)?;
+            Ok(pkexec_wrap(vec![
+                "dnf".into(), "config-manager".into(),
+                "--set-disabled".into(), id.clone(),
+            ], true))
+        }
+        "zypper.repo-enable" => {
+            let id = req.args.first().ok_or("eksik repo id")?;
+            check_repo_id(id)?;
+            Ok(pkexec_wrap(vec![
+                "zypper".into(), "modifyrepo".into(),
+                "--enable".into(), id.clone(),
+            ], true))
+        }
+        "zypper.repo-disable" => {
+            let id = req.args.first().ok_or("eksik repo id")?;
+            check_repo_id(id)?;
+            Ok(pkexec_wrap(vec![
+                "zypper".into(), "modifyrepo".into(),
+                "--disable".into(), id.clone(),
+            ], true))
+        }
+        "flatpak.user.remote-modify-enable" => {
+            let name = req.args.first().ok_or("eksik remote adı")?;
+            check_remote_name(name)?;
+            Ok(Resolved {
+                program: "flatpak".into(),
+                args: vec!["remote-modify".into(), "--user".into(), "--enable".into(), name.clone()],
+                needs_root: false, needs_native_lock: false,
+            })
+        }
+        "flatpak.user.remote-modify-disable" => {
+            let name = req.args.first().ok_or("eksik remote adı")?;
+            check_remote_name(name)?;
+            Ok(Resolved {
+                program: "flatpak".into(),
+                args: vec!["remote-modify".into(), "--user".into(), "--disable".into(), name.clone()],
+                needs_root: false, needs_native_lock: false,
+            })
+        }
+        "flatpak.user.remote-delete" => {
+            let name = req.args.first().ok_or("eksik remote adı")?;
+            check_remote_name(name)?;
+            Ok(Resolved {
+                program: "flatpak".into(),
+                args: vec!["remote-delete".into(), "--user".into(), "--force".into(), name.clone()],
+                needs_root: false, needs_native_lock: false,
+            })
+        }
+
+        // ============= GÜVENLİK TARAYICILARI =============
+
+        "scanner.chkrootkit" => Ok(pkexec_wrap(vec![
+            "chkrootkit".into(), "-q".into(),
+        ], false)),
+        "scanner.rkhunter" => Ok(pkexec_wrap(vec![
+            "rkhunter".into(), "--check".into(),
+            "--skip-keypress".into(), "--nocolors".into(),
+        ], false)),
+        "scanner.clamav" => {
+            // varsayılan: kullanıcı home dizini; çağıran path verirse onu kullan
+            let default_path = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+            let path = req.args.first().cloned().unwrap_or(default_path);
+            check_fs_path(&path)?;
+            Ok(Resolved {
+                program: "clamscan".into(),
+                args: vec![
+                    "-r".into(), "--bell".into(), "-i".into(),
+                    "--no-summary".into(), path,
+                ],
+                needs_root: false, needs_native_lock: false,
+            })
+        }
+        "scanner.maldet" => Ok(pkexec_wrap(vec![
+            "maldet".into(), "-a".into(), "/home".into(),
+        ], false)),
+        "scanner.lynis" => Ok(pkexec_wrap(vec![
+            "lynis".into(), "audit".into(), "system".into(),
+            "--quick".into(), "--no-colors".into(),
+        ], false)),
+        "scanner.aide" => Ok(pkexec_wrap(vec![
+            "aide".into(), "--check".into(),
+        ], false)),
+        "scanner.debsums" => Ok(pkexec_wrap(vec![
+            "debsums".into(), "-c".into(),
+        ], false)),
+        "scanner.rpm-verify" => Ok(pkexec_wrap(vec![
+            "rpm".into(), "-Va".into(),
+        ], false)),
+
         // ============= SYSTEM MAINTENANCE (root) =============
 
         "journalctl.vacuum-time" => {
@@ -321,6 +460,33 @@ fn check_vacuum_duration(s: &str) -> Result<(), String> {
     // örn. "1d", "30d", "2weeks", "12h"
     if !s.chars().all(|c| c.is_ascii_alphanumeric()) {
         return Err("süre formatı uygun değil (örn. 7d)".into());
+    }
+    Ok(())
+}
+
+fn check_repo_id(s: &str) -> Result<(), String> {
+    if s.is_empty() || s.len() > 128 {
+        return Err("geçersiz repo id".into());
+    }
+    // dnf/zypper repo id'leri: harf/rakam, ., -, _, :
+    if !s.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | ':')) {
+        return Err("repo id'de geçersiz karakter".into());
+    }
+    if s.starts_with('-') || s.contains("..") {
+        return Err("repo id şüpheli".into());
+    }
+    Ok(())
+}
+
+fn check_fs_path(p: &str) -> Result<(), String> {
+    if p.is_empty() || p.len() > 4096 {
+        return Err("yol uzunluğu hatalı".into());
+    }
+    if !p.starts_with('/') && !p.starts_with("~/") {
+        return Err("yol mutlak olmalı".into());
+    }
+    if p.contains('\0') || p.contains('\n') || p.contains('\r') {
+        return Err("yolda geçersiz karakter".into());
     }
     Ok(())
 }
@@ -464,6 +630,10 @@ fn run_task_blocking(app: AppHandle, id: u32, resolved: Resolved) {
         }
     };
 
+    // Çocuk PID'sini Task'a yaz — cancel_task buradan SIGTERM gönderir.
+    let child_pid = child.id();
+    update_task(id, &app, |t| { t.pid = Some(child_pid); });
+
     // stdout & stderr ayrı thread'lerde okunmalı — yoksa boru tampon
     // doluluğunda çocuk süreç bloklanır.
     let mut handles = Vec::new();
@@ -511,11 +681,126 @@ fn run_task_blocking(app: AppHandle, id: u32, resolved: Resolved) {
         t.ended_at = Some(now_secs());
         t.exit_code = Some(exit_code);
         t.error = error;
+        t.pid = None;
     });
+
+    // Tamamlanan task'ı kalıcı geçmişe yaz.
+    if let Some(t) = tasks().lock().ok().and_then(|m| m.get(&id).cloned()) {
+        append_to_history(&t);
+    }
+}
+
+#[tauri::command]
+pub fn cancel_task(id: u32) -> Result<bool, String> {
+    let pid_opt = tasks().lock().ok()
+        .and_then(|m| m.get(&id).and_then(|t| t.pid));
+    let Some(pid) = pid_opt else {
+        return Err("Task çalışmıyor veya PID kaydı yok".into());
+    };
+    // SIGTERM. Çocuk thread wait() devam ediyor; child kapanınca run_task_blocking
+    // status'ü "failed" olarak işaretler (exit code 143 = 128+15). UI tarafında
+    // bunu "cancelled" olarak relabel eden helper ekleyebiliriz; şimdilik
+    // status'e doğrudan müdahale.
+    let _ = Command::new("kill")
+        .args(["-TERM", &pid.to_string()])
+        .status();
+    // 2 sn'de hala duruyorsa SIGKILL
+    let pid_str = pid.to_string();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        // SIGKILL'i hâlâ ayakta olan süreçlere; öldüyse hata sessiz.
+        let _ = Command::new("kill")
+            .args(["-KILL", &pid_str])
+            .status();
+    });
+    if let Ok(mut map) = tasks().lock() {
+        if let Some(t) = map.get_mut(&id) {
+            // running ise iptal'e geçir; aksi halde dokunma
+            if t.status == "running" || t.status == "queued" {
+                t.status = "cancelled".into();
+                t.ended_at = Some(now_secs());
+            }
+        }
+    }
+    Ok(true)
+}
+
+// ============= KALICI HISTORY =============
+
+fn history_dir() -> Option<std::path::PathBuf> {
+    use std::path::PathBuf;
+    let base: PathBuf = std::env::var_os("XDG_DATA_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local/share")))?;
+    Some(base.join("santral"))
+}
+
+fn append_to_history(task: &Task) {
+    let Some(dir) = history_dir() else { return; };
+    let _ = std::fs::create_dir_all(&dir);
+    let path = dir.join("history.jsonl");
+    if let Ok(json) = serde_json::to_string(task) {
+        use std::io::Write;
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .create(true).append(true).open(&path)
+        {
+            let _ = writeln!(f, "{json}");
+        }
+    }
+    rotate_history_if_huge(&dir);
+}
+
+/// Geçmiş dosyası 1 MB'yi aşarsa eski yarısını sil — sınırsız büyümesini önler.
+fn rotate_history_if_huge(dir: &std::path::Path) {
+    let path = dir.join("history.jsonl");
+    let Ok(meta) = std::fs::metadata(&path) else { return; };
+    if meta.len() < 1_000_000 {
+        return;
+    }
+    let Ok(content) = std::fs::read_to_string(&path) else { return; };
+    let lines: Vec<&str> = content.lines().collect();
+    let keep_from = lines.len() / 2;
+    let kept = lines[keep_from..].join("\n");
+    let _ = std::fs::write(&path, kept + "\n");
+}
+
+const HISTORY_LOAD_LIMIT: usize = 100;
+
+fn load_history() -> Vec<Task> {
+    let Some(dir) = history_dir() else { return vec![]; };
+    let path = dir.join("history.jsonl");
+    let Ok(content) = std::fs::read_to_string(&path) else { return vec![]; };
+    let parsed: Vec<Task> = content.lines()
+        .rev()
+        .filter_map(|l| serde_json::from_str::<Task>(l).ok())
+        .take(HISTORY_LOAD_LIMIT)
+        .collect();
+    parsed
+}
+
+/// İlk `list_tasks` çağrısı veya init'te bellek boşsa geçmişten doldur.
+fn ensure_history_loaded() {
+    let mut map = match tasks().lock() {
+        Ok(m) => m,
+        Err(_) => return,
+    };
+    if !map.is_empty() {
+        return;
+    }
+    let hist = load_history();
+    let max_id = hist.iter().map(|t| t.id).max().unwrap_or(0);
+    if max_id > 0 {
+        // Yeni task'lar geçmişle çakışmasın — sayacı geçmişin üstüne çek.
+        NEXT_ID.store(max_id + 1, Ordering::SeqCst);
+    }
+    for t in hist {
+        map.insert(t.id, t);
+    }
 }
 
 #[tauri::command]
 pub fn list_tasks() -> Vec<Task> {
+    ensure_history_loaded();
     tasks()
         .lock()
         .map(|m| {
