@@ -1,8 +1,5 @@
 // PAKETLER sayfası — paket yönetimi durumu (native + flatpak + snap),
 // flatpak uzak depoları, eylem önerileri.
-//
-// Aksiyon butonları (Flatpak'i kur, Flathub'ı ekle, snapd'yi başlat) şimdilik
-// placeholder; gerçek polkit + komut akışı sonraki turda.
 
 import { pageHead, sectionHead, esc } from "../util.js";
 import { tasks } from "../tasks.js";
@@ -16,6 +13,7 @@ const NATIVE_LABELS = {
 
 export async function renderPaketler(host, { invoke }) {
   const data = await invoke("package_overview");
+  const nativeKind = data.native?.kind || "unknown";
 
   host.innerHTML = `
     ${pageHead({
@@ -27,8 +25,8 @@ export async function renderPaketler(host, { invoke }) {
     ${sectionHead("Paket Yöneticileri")}
     <div class="pkg-heroes">
       ${nativeCard(data.native)}
-      ${flatpakCard(data.flatpak)}
-      ${snapCard(data.snap)}
+      ${flatpakCard(data.flatpak, nativeKind)}
+      ${snapCard(data.snap, nativeKind)}
     </div>
 
     ${data.flatpak.installed ? `
@@ -38,7 +36,7 @@ export async function renderPaketler(host, { invoke }) {
 
     ${data.recommendations.length ? `
       ${sectionHead("Öneriler")}
-      <div class="recs">${data.recommendations.map(recCard).join("")}</div>
+      <div class="recs">${data.recommendations.map((r) => recCard(r, nativeKind)).join("")}</div>
     ` : ""}
   `;
 
@@ -46,11 +44,11 @@ export async function renderPaketler(host, { invoke }) {
     if (host.__invoke) renderPaketler(host, { invoke: host.__invoke });
   });
 
-  // Öneri kartlarındaki aksiyon butonlarını wire et — id'ye göre kind/args eşleştir
+  // Öneri ve hero butonları → aksiyon başlat
   host.querySelectorAll("[data-rec-id]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.recId;
-      const req = recAction(id);
+      const req = recAction(id, nativeKind);
       if (!req) return;
       try { await tasks.start(req); } catch {}
     });
@@ -59,7 +57,7 @@ export async function renderPaketler(host, { invoke }) {
 
 /** Öneri id'sini ActionRequest'e çevir. Backend allowlist'i tarafından
  *  ayrıca doğrulanır — burası kullanıcıya gösterilen "ne yapılacak". */
-function recAction(id) {
+function recAction(id, nativeKind) {
   switch (id) {
     case "add-flathub":
       return {
@@ -67,9 +65,39 @@ function recAction(id) {
         args: ["flathub", "https://flathub.org/repo/flathub.flatpakrepo"],
         label: "Flathub'ı kullanıcı remote olarak ekle",
       };
-    // diğer öneriler (Flatpak'i kur, snapd'yi başlat) root gerektiriyor →
-    // Faz 7.2'de polkit + pkexec ile.
+
+    case "install-flatpak": {
+      const kind = installKindFor(nativeKind);
+      if (!kind) return null;
+      return { kind, args: ["flatpak"], label: "Flatpak'i kur" };
+    }
+
+    case "snap-optional": {
+      const kind = installKindFor(nativeKind);
+      if (!kind) return null;
+      // Tüm ailelerde paket adı "snapd". Arch'ta AUR'dan; sistem kurulumdan
+      // sonra socket'i de açmak gerekiyor (snapd-inactive aksiyonu).
+      return { kind, args: ["snapd"], label: "Snap (snapd) kur" };
+    }
+
+    case "snapd-inactive":
+      return {
+        kind: "systemd.snapd-enable",
+        args: [],
+        label: "snapd servisini başlat",
+      };
+
     default: return null;
+  }
+}
+
+function installKindFor(nativeKind) {
+  switch (nativeKind) {
+    case "apt":    return "apt.install";
+    case "dnf":    return "dnf.install";
+    case "pacman": return "pacman.install";
+    case "zypper": return "zypper.install";
+    default:       return null;
   }
 }
 
@@ -113,7 +141,7 @@ function nativeCard(n) {
   `;
 }
 
-function flatpakCard(f) {
+function flatpakCard(f, nativeKind) {
   const color = f.installed ? "#00f0ff" : "#ffd400";
   const status = !f.installed
     ? `<span class="chip warn">× Kurulu değil</span>`
@@ -150,12 +178,14 @@ function flatpakCard(f) {
       </div>
       ${f.installed
         ? ""
-        : `<button class="btn install-btn pkg-action" disabled title="yakında">▶ Flatpak'i kur</button>`}
+        : (installKindFor(nativeKind)
+            ? `<button class="btn install-btn pkg-action" data-rec-id="install-flatpak">▶ Flatpak'i kur</button>`
+            : `<button class="btn install-btn pkg-action" disabled title="paket yöneticisi tespit edilemedi">▶ Flatpak'i kur</button>`)}
     </article>
   `;
 }
 
-function snapCard(s) {
+function snapCard(s, nativeKind) {
   const color = s.installed ? "#b400ff" : "#5a5a6a";
   const status = !s.installed
     ? `<span class="chip">opsiyonel</span>`
@@ -187,8 +217,12 @@ function snapCard(s) {
         </div>
       </div>
       ${s.installed
-        ? ""
-        : `<button class="btn install-btn pkg-action" disabled title="yakında — opsiyonel">▶ Snap'i kur</button>`}
+        ? (s.service_active
+            ? ""
+            : `<button class="btn install-btn pkg-action" data-rec-id="snapd-inactive">▶ snapd'yi başlat</button>`)
+        : (installKindFor(nativeKind)
+            ? `<button class="btn install-btn pkg-action" data-rec-id="snap-optional">▶ Snap'i kur (opsiyonel)</button>`
+            : `<button class="btn install-btn pkg-action" disabled title="paket yöneticisi tespit edilemedi">▶ Snap'i kur</button>`)}
     </article>
   `;
 }
@@ -213,7 +247,7 @@ function remotesBlock(f) {
   `;
 }
 
-function recCard(r) {
+function recCard(r, nativeKind) {
   const color = r.severity === "good" ? "#66ff99"
     : r.severity === "warn" ? "#ffd400"
     : "#00f0ff";
@@ -233,21 +267,29 @@ function recCard(r) {
           </details>
         ` : ""}
       </div>
-      ${r.action_label ? renderRecButton(r) : ""}
+      ${r.action_label ? renderRecButton(r, nativeKind) : ""}
     </article>
   `;
 }
 
-function renderRecButton(r) {
-  // Bu fazda yalnızca non-root (flatpak --user) öneriler interaktif.
-  const wireable = r.id === "add-flathub";
-  if (wireable) {
-    return `<button class="btn install-btn pkg-action" data-rec-id="${esc(r.id)}">
-      ▶ ${esc(r.action_label)}
-    </button>`;
+function renderRecButton(r, nativeKind) {
+  // Tavsiye butonları artık tamamen aktif — recAction() id→aksiyon eşlemesini
+  // yapar. Eğer eşleme yoksa (id desteklenmiyor), buton sessizce disable.
+  const wireable = ["add-flathub", "install-flatpak", "snap-optional", "snapd-inactive"]
+    .includes(r.id);
+  // Native PM tespit edilemedi → "kur" eylemleri çalıştırılamaz.
+  const noNativePM = ["install-flatpak", "snap-optional"].includes(r.id)
+    && !installKindFor(nativeKind);
+  if (!wireable || noNativePM) {
+    return `<button class="btn install-btn pkg-action" disabled title="${
+      noNativePM
+        ? "paket yöneticisi tespit edilemedi"
+        : "bu tavsiye için aksiyon tanımlı değil"
+    }">▶ ${esc(r.action_label)}</button>`;
   }
-  return `<button class="btn install-btn pkg-action" disabled title="Faz 7.2 — root yetkisi polkit ile">
-    ▶ ${esc(r.action_label)} <small>(root)</small>
+  const needsRoot = r.id !== "add-flathub";
+  return `<button class="btn install-btn pkg-action" data-rec-id="${esc(r.id)}">
+    ▶ ${esc(r.action_label)}${needsRoot ? ` <small>(root)</small>` : ""}
   </button>`;
 }
 

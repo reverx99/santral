@@ -48,6 +48,12 @@ export async function renderSuruculer(host, { invoke }) {
     <div class="cards">${codecsCardsFor(family)}</div>
 
     ${sectionHead("Güç ve termal (laptop)")}
+    <p class="page-lede" style="margin: -4px 0 14px; opacity:.78;">
+      ▲ <strong>power-profiles-daemon</strong> ve <strong>TLP</strong> aynı
+      işi (CPU governor + güç profili) yapar — <em>ikisini birden kurma</em>,
+      çakışırlar. GNOME/KDE varsayılan profil menüsü istiyorsan PPD'yi, daha
+      detaylı ayar istiyorsan TLP'yi seç.
+    </p>
     <div class="cards">${powerCardsFor(family)}</div>
 
     ${family === "dnf" ? `

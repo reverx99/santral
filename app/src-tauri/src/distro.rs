@@ -119,6 +119,16 @@ fn detect_package_manager(id: &str, id_like: &[String]) -> PackageManager {
             }
         }
     }
+    // os-release'ten gelen sonuç güvenilir mi? Eşleşen paket yöneticisinin
+    // binary'si PATH'te yoksa (ör. minimal/özel kurulum) gerçekten kurulu
+    // olana fallback yap. Mint→Debian ya da Pop!_OS→Ubuntu gibi yanlış
+    // sınıflama olsa bile install kind'leri yine apt olduğundan riski yok;
+    // ama "dnf" diyip dnf yoksa silent fail olur.
+    if let Some((kind, _)) = found {
+        if which::which(kind).is_err() {
+            found = None;
+        }
+    }
     if found.is_none() {
         for kind in &["apt", "dnf", "pacman", "zypper"] {
             if which::which(kind).is_ok() {

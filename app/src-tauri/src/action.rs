@@ -217,8 +217,14 @@ fn resolve_command(req: &ActionRequest) -> Result<Resolved, String> {
             a.extend(pkgs);
             Ok(pkexec_wrap(a, true))
         }
+        // Zypper'da orphan paketleri kaldırma tek komutla yok; sh -c ile
+        // listele → temizle. Komut sabit string — kullanıcıdan hiçbir argüman
+        // gelmiyor, shell injection yüzeyi yok.
         "zypper.autoremove" => Ok(pkexec_wrap(vec![
-            "zypper".into(), "rm".into(), "--clean-deps".into(), "-y".into(),
+            "sh".into(), "-c".into(),
+            "zypper --non-interactive packages --orphaned 2>/dev/null \
+             | awk -F'|' 'NR>4 {gsub(/ /,\"\",$3); if($3!=\"\") print $3}' \
+             | xargs -r zypper --non-interactive remove --clean-deps".into(),
         ], true)),
         "zypper.clean" => Ok(pkexec_wrap(vec![
             "zypper".into(), "clean".into(), "--all".into(),
@@ -515,6 +521,17 @@ fn resolve_command(req: &ActionRequest) -> Result<Resolved, String> {
             ], true))
         }
 
+        // ============= SİSTEM SERVİSLERİ (root) =============
+
+        /// snapd servisini etkinleştir + başlat. Fedora/openSUSE kurulumda
+        /// snapd paketi geldikten sonra socket'i manuel açmak gerekir. Arch'ta
+        /// ek olarak `/var/lib/snapd/snap -> /snap` sembolik bağı manuel
+        /// kurulmalı — bu aksiyonun kapsamı dışı; öneri metninde uyarılır.
+        "systemd.snapd-enable" => Ok(pkexec_wrap(vec![
+            "systemctl".into(), "enable".into(), "--now".into(),
+            "snapd.socket".into(),
+        ], false)),
+
         // ============= TEST =============
         "noop.echo" => {
             let msg = req.args.first().cloned().unwrap_or_else(|| "merhaba".into());
@@ -736,8 +753,19 @@ fn check_ppa(s: &str) -> Result<(), String> {
 fn interpret_exit_code(prog: &str, code: i32) -> Option<String> {
     if prog == "pkexec" {
         match code {
-            126 => return Some("Yetkilendirme iptal edildi (parola girilmedi).".into()),
-            127 => return Some("Yetki reddedildi veya polkit ajanı yok.".into()),
+            126 => return Some(
+                "Yetkilendirme iptal edildi (parola girilmedi). Yeniden \
+                 denemek için 'Tekrarla' butonuna bas."
+                    .into(),
+            ),
+            127 => return Some(
+                "Polkit kimlik ajanı bulunamadı ya da reddetti. \
+                 GNOME/KDE oturumunda polkit ajanı otomatik çalışır; \
+                 minimal masaüstü (i3, sway, vb.) kullanıyorsan \
+                 'polkit-gnome-authentication-agent-1' veya \
+                 'lxqt-policykit-agent' kurman gerekiyor."
+                    .into(),
+            ),
             _ => {}
         }
     }
@@ -857,7 +885,13 @@ fn run_task_blocking(app: AppHandle, id: u32, resolved: Resolved) {
         Ok(c) => c,
         Err(e) => {
             let msg = if e.kind() == std::io::ErrorKind::NotFound {
-                format!("'{}' bulunamadı — kurulu mu?", resolved.program)
+                let hint = match resolved.program.as_str() {
+                    "pkexec"  => " — polkit eksik. (ör. apt: 'sudo apt install policykit-1')",
+                    "flatpak" => " — Paketler sayfasından Flatpak'i kurabilirsin.",
+                    "snap"    => " — Paketler sayfasından Snap'i (snapd) kurabilirsin.",
+                    _         => "",
+                };
+                format!("'{}' bulunamadı — kurulu mu?{hint}", resolved.program)
             } else {
                 format!("başlatma hatası: {e}")
             };
