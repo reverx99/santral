@@ -47,6 +47,9 @@ export async function renderSuruculer(host, { invoke }) {
     ${sectionHead("Multimedya codec'leri")}
     <div class="cards">${codecsCardsFor(family)}</div>
 
+    ${sectionHead("Güç ve termal (laptop)")}
+    <div class="cards">${powerCardsFor(family)}</div>
+
     ${family === "dnf" ? `
       ${sectionHead("Ön koşullar")}
       <div class="cards">
@@ -69,10 +72,12 @@ export async function renderSuruculer(host, { invoke }) {
 }
 
 function gpuVendor(g) {
+  // Vendor + product birleşik metni üzerinde \b ile kelime sınırı eşleme:
+  // "corporation" içindeki "ati" gibi yanlış eşleşmelere karşı koruma.
   const v = ((g.vendor || "") + " " + (g.product || "")).toLowerCase();
-  if (v.includes("nvidia")) return "nvidia";
-  if (v.includes("amd") || v.includes("ati") || v.includes("radeon")) return "amd";
-  if (v.includes("intel")) return "intel";
+  if (/\bnvidia\b/.test(v)) return "nvidia";
+  if (/\b(amd|ati|radeon)\b/.test(v)) return "amd";
+  if (/\bintel\b/.test(v)) return "intel";
   return "other";
 }
 
@@ -154,41 +159,73 @@ function nvidiaCardsFor(family) {
 function amdCardsFor(family) {
   switch (family) {
     case "apt":
-      return driverCard({
-        color: "#00f0ff",
-        title: "Mesa + Vulkan (AMDGPU)",
-        sub: "Açık kaynak AMDGPU sürücüsü, Mesa ve Vulkan paketleri. Modern AMD kartlar için resmi yol.",
-        cmd: "sudo apt install -y mesa-vulkan-drivers libvulkan1 vulkan-tools mesa-utils",
-        kind: "apt.install",
-        pkgs: ["mesa-vulkan-drivers", "libvulkan1", "vulkan-tools", "mesa-utils"],
-      });
+      return [
+        driverCard({
+          color: "#00f0ff",
+          title: "Mesa + Vulkan (AMDGPU)",
+          sub: "Açık kaynak AMDGPU sürücüsü, Mesa ve Vulkan paketleri. Modern AMD kartlar için resmi yol.",
+          cmd: "sudo apt install -y mesa-vulkan-drivers libvulkan1 vulkan-tools mesa-utils",
+          kind: "apt.install",
+          pkgs: ["mesa-vulkan-drivers", "libvulkan1", "vulkan-tools", "mesa-utils"],
+        }),
+        driverCard({
+          color: "#b400ff",
+          title: "AMD VA-API (donanımsal video)",
+          sub: "mesa-va-drivers — AMD GPU üzerinde donanımsal video çöz/kodla. RDNA2+ AV1, H.265 ve H.264.",
+          cmd: "sudo apt install -y mesa-va-drivers vainfo",
+          kind: "apt.install",
+          pkgs: ["mesa-va-drivers", "vainfo"],
+        }),
+      ].join("");
     case "dnf":
-      return driverCard({
-        color: "#00f0ff",
-        title: "Mesa + Vulkan",
-        sub: "Fedora'da AMDGPU varsayılan; bu paket eksikleri tamamlar.",
-        cmd: "sudo dnf install -y mesa-vulkan-drivers vulkan-tools mesa-libGL",
-        kind: "dnf.install",
-        pkgs: ["mesa-vulkan-drivers", "vulkan-tools", "mesa-libGL"],
-      });
+      return [
+        driverCard({
+          color: "#00f0ff",
+          title: "Mesa + Vulkan",
+          sub: "Fedora'da AMDGPU varsayılan; bu paket eksikleri tamamlar.",
+          cmd: "sudo dnf install -y mesa-vulkan-drivers vulkan-tools mesa-libGL",
+          kind: "dnf.install",
+          pkgs: ["mesa-vulkan-drivers", "vulkan-tools", "mesa-libGL"],
+        }),
+        driverCard({
+          color: "#b400ff",
+          title: "AMD VA-API",
+          sub: "mesa-va-drivers (RPM Fusion'da freeworld varyantı daha kapsamlı).",
+          cmd: "sudo dnf install -y mesa-va-drivers libva-utils",
+          kind: "dnf.install",
+          pkgs: ["mesa-va-drivers", "libva-utils"],
+        }),
+      ].join("");
     case "pacman":
-      return driverCard({
-        color: "#00f0ff",
-        title: "Mesa + Vulkan radv",
-        sub: "Arch'ta AMDGPU + Vulkan radv paketleri.",
-        cmd: "sudo pacman -S --noconfirm mesa vulkan-radeon vulkan-tools",
-        kind: "pacman.install",
-        pkgs: ["mesa", "vulkan-radeon", "vulkan-tools"],
-      });
+      return [
+        driverCard({
+          color: "#00f0ff",
+          title: "Mesa + Vulkan radv",
+          sub: "Arch'ta AMDGPU + Vulkan radv paketleri.",
+          cmd: "sudo pacman -S --noconfirm mesa vulkan-radeon vulkan-tools",
+          kind: "pacman.install",
+          pkgs: ["mesa", "vulkan-radeon", "vulkan-tools"],
+        }),
+        driverCard({
+          color: "#b400ff",
+          title: "AMD VA-API",
+          sub: "libva-mesa-driver — AMD donanımsal video.",
+          cmd: "sudo pacman -S --noconfirm libva-mesa-driver libva-utils",
+          kind: "pacman.install",
+          pkgs: ["libva-mesa-driver", "libva-utils"],
+        }),
+      ].join("");
     case "zypper":
-      return driverCard({
-        color: "#00f0ff",
-        title: "Mesa + Vulkan",
-        sub: "openSUSE için açık kaynak AMD desteği.",
-        cmd: "sudo zypper install -y Mesa-libVulkan-devel vulkan-tools",
-        kind: "zypper.install",
-        pkgs: ["Mesa-libVulkan-devel", "vulkan-tools"],
-      });
+      return [
+        driverCard({
+          color: "#00f0ff",
+          title: "Mesa + Vulkan",
+          sub: "openSUSE için açık kaynak AMD desteği.",
+          cmd: "sudo zypper install -y Mesa-libVulkan-devel vulkan-tools",
+          kind: "zypper.install",
+          pkgs: ["Mesa-libVulkan-devel", "vulkan-tools"],
+        }),
+      ].join("");
     default:
       return `<div class="muted">AMD için bu distro öneri yok.</div>`;
   }
@@ -199,41 +236,181 @@ function amdCardsFor(family) {
 function intelCardsFor(family) {
   switch (family) {
     case "apt":
-      return driverCard({
-        color: "#ffd400",
-        title: "Intel medya hızlandırma",
-        sub: "intel-media-va-driver: VA-API üzerinden donanımsal video çözme. YouTube / film izlerken CPU yükünü düşürür.",
-        cmd: "sudo apt install -y intel-media-va-driver-non-free i965-va-driver vainfo",
-        kind: "apt.install",
-        pkgs: ["intel-media-va-driver-non-free", "i965-va-driver", "vainfo"],
-      });
+      return [
+        driverCard({
+          color: "#ffd400",
+          title: "Intel medya hızlandırma (VA-API)",
+          sub: "Intel Quick Sync üzerinden donanımsal video çöz/kodla. YouTube/film izlerken CPU yerine iGPU çalışır, batarya uzar.",
+          cmd: "sudo apt install -y intel-media-va-driver-non-free i965-va-driver vainfo libva-drm2",
+          kind: "apt.install",
+          pkgs: ["intel-media-va-driver-non-free", "i965-va-driver", "vainfo", "libva-drm2"],
+        }),
+        driverCard({
+          color: "#00f0ff",
+          title: "Vulkan Intel (ANV)",
+          sub: "mesa-vulkan-drivers — modern oyunlar (DXVK / Proton) için zorunlu.",
+          cmd: "sudo apt install -y mesa-vulkan-drivers libvulkan1 vulkan-tools",
+          kind: "apt.install",
+          pkgs: ["mesa-vulkan-drivers", "libvulkan1", "vulkan-tools"],
+        }),
+        driverCard({
+          color: "#b400ff",
+          title: "OpenCL — Intel Compute Runtime",
+          sub: "intel-opencl-icd: AI/ML, Blender, Darktable, GIMP gibi araçlar iGPU'yu hesaplama birimi olarak kullanabilir.",
+          cmd: "sudo apt install -y intel-opencl-icd clinfo",
+          kind: "apt.install",
+          pkgs: ["intel-opencl-icd", "clinfo"],
+        }),
+        driverCard({
+          color: "#ff0099",
+          title: "GPU izleme: intel_gpu_top",
+          sub: "intel-gpu-tools paketi. htop benzeri ama Intel iGPU için — render meşguliyeti, video engine kullanımı, frekanslar.",
+          cmd: "sudo apt install -y intel-gpu-tools",
+          kind: "apt.install",
+          pkgs: ["intel-gpu-tools"],
+        }),
+        driverCard({
+          color: "#66ff99",
+          title: "intel-microcode",
+          sub: "İşlemci mikrokod güncellemeleri. Spectre/Meltdown güvenlik açıkları için zorunlu; ayrıca kararlılık ve düşük seviye performans için önemli.",
+          cmd: "sudo apt install -y intel-microcode",
+          kind: "apt.install",
+          pkgs: ["intel-microcode"],
+        }),
+      ].join("");
+
     case "dnf":
-      return driverCard({
-        color: "#ffd400",
-        title: "intel-media-driver (libva)",
-        sub: "RPM Fusion gereklidir.",
-        cmd: "sudo dnf install -y intel-media-driver libva-utils",
-        kind: "dnf.install",
-        pkgs: ["intel-media-driver", "libva-utils"],
-      });
+      return [
+        driverCard({
+          color: "#ffd400",
+          title: "intel-media-driver (VA-API)",
+          sub: "RPM Fusion gereklidir. Quick Sync ile donanımsal video çöz/kodla. Yeni Gen kartlar için. Eski (Gen 8 öncesi) için libva-intel-driver da gerekebilir.",
+          cmd: "sudo dnf install -y intel-media-driver libva-utils libva-intel-driver",
+          kind: "dnf.install",
+          pkgs: ["intel-media-driver", "libva-utils", "libva-intel-driver"],
+        }),
+        driverCard({
+          color: "#00f0ff",
+          title: "Vulkan Intel (ANV)",
+          sub: "mesa-vulkan-drivers — DXVK/Proton ve modern Vulkan oyunları için.",
+          cmd: "sudo dnf install -y mesa-vulkan-drivers vulkan-tools",
+          kind: "dnf.install",
+          pkgs: ["mesa-vulkan-drivers", "vulkan-tools"],
+        }),
+        driverCard({
+          color: "#b400ff",
+          title: "OpenCL — intel-compute-runtime",
+          sub: "AI/ML, Blender, Darktable iGPU üzerinden hesaplama. ocl-icd OpenCL loader.",
+          cmd: "sudo dnf install -y intel-compute-runtime ocl-icd clinfo",
+          kind: "dnf.install",
+          pkgs: ["intel-compute-runtime", "ocl-icd", "clinfo"],
+        }),
+        driverCard({
+          color: "#ff0099",
+          title: "GPU izleme: intel_gpu_top",
+          sub: "Intel GPU kullanımını canlı izleme aracı.",
+          cmd: "sudo dnf install -y intel-gpu-tools",
+          kind: "dnf.install",
+          pkgs: ["intel-gpu-tools"],
+        }),
+        driverCard({
+          color: "#66ff99",
+          title: "microcode_ctl (mikrokod güncellemeleri)",
+          sub: "Fedora'da genelde varsayılan kurulu. Yoksa açık güvenlik açıkları için kur.",
+          cmd: "sudo dnf install -y microcode_ctl",
+          kind: "dnf.install",
+          pkgs: ["microcode_ctl"],
+        }),
+      ].join("");
+
     case "pacman":
-      return driverCard({
-        color: "#ffd400",
-        title: "intel-media-driver",
-        sub: "Vulkan ANV ve VA-API ile birlikte.",
-        cmd: "sudo pacman -S --noconfirm intel-media-driver vulkan-intel libva-utils",
-        kind: "pacman.install",
-        pkgs: ["intel-media-driver", "vulkan-intel", "libva-utils"],
-      });
+      return [
+        driverCard({
+          color: "#ffd400",
+          title: "intel-media-driver (VA-API)",
+          sub: "Arch'ta Quick Sync için. Eski donanım (Gen 8 öncesi) için libva-intel-driver alternatif.",
+          cmd: "sudo pacman -S --noconfirm intel-media-driver libva-utils",
+          kind: "pacman.install",
+          pkgs: ["intel-media-driver", "libva-utils"],
+        }),
+        driverCard({
+          color: "#00f0ff",
+          title: "Vulkan Intel (ANV)",
+          sub: "vulkan-intel — modern oyunlar (DXVK) için.",
+          cmd: "sudo pacman -S --noconfirm vulkan-intel vulkan-tools",
+          kind: "pacman.install",
+          pkgs: ["vulkan-intel", "vulkan-tools"],
+        }),
+        driverCard({
+          color: "#b400ff",
+          title: "OpenCL — intel-compute-runtime",
+          sub: "Intel iGPU üzerinde OpenCL hesaplama. Blender/Darktable ve ML.",
+          cmd: "sudo pacman -S --noconfirm intel-compute-runtime ocl-icd clinfo",
+          kind: "pacman.install",
+          pkgs: ["intel-compute-runtime", "ocl-icd", "clinfo"],
+        }),
+        driverCard({
+          color: "#ff0099",
+          title: "intel-gpu-tools",
+          sub: "intel_gpu_top: canlı GPU kullanım izleme.",
+          cmd: "sudo pacman -S --noconfirm intel-gpu-tools",
+          kind: "pacman.install",
+          pkgs: ["intel-gpu-tools"],
+        }),
+        driverCard({
+          color: "#66ff99",
+          title: "intel-ucode",
+          sub: "İşlemci mikrokod paketi. /boot'a kopyalanır, bootloader (grub/systemd-boot) tarafından yüklenir. Güvenlik+kararlılık için zorunlu.",
+          cmd: "sudo pacman -S --noconfirm intel-ucode",
+          kind: "pacman.install",
+          pkgs: ["intel-ucode"],
+        }),
+      ].join("");
+
     case "zypper":
-      return driverCard({
-        color: "#ffd400",
-        title: "intel-media-driver",
-        sub: "openSUSE Intel medya hızlandırma.",
-        cmd: "sudo zypper install -y intel-media-driver libva-utils",
-        kind: "zypper.install",
-        pkgs: ["intel-media-driver", "libva-utils"],
-      });
+      return [
+        driverCard({
+          color: "#ffd400",
+          title: "intel-media-driver (VA-API)",
+          sub: "openSUSE Quick Sync paketleri.",
+          cmd: "sudo zypper install -y intel-media-driver libva-utils",
+          kind: "zypper.install",
+          pkgs: ["intel-media-driver", "libva-utils"],
+        }),
+        driverCard({
+          color: "#00f0ff",
+          title: "Vulkan Intel + Mesa",
+          sub: "openSUSE'da Vulkan ve Mesa GL paketleri.",
+          cmd: "sudo zypper install -y Mesa-libVulkan-devel vulkan-tools",
+          kind: "zypper.install",
+          pkgs: ["Mesa-libVulkan-devel", "vulkan-tools"],
+        }),
+        driverCard({
+          color: "#b400ff",
+          title: "OpenCL — Intel iGPU",
+          sub: "openSUSE'da OpenCL desteği.",
+          cmd: "sudo zypper install -y intel-opencl clinfo",
+          kind: "zypper.install",
+          pkgs: ["intel-opencl", "clinfo"],
+        }),
+        driverCard({
+          color: "#ff0099",
+          title: "intel-gpu-tools",
+          sub: "intel_gpu_top ve GPU izleme.",
+          cmd: "sudo zypper install -y intel-gpu-tools",
+          kind: "zypper.install",
+          pkgs: ["intel-gpu-tools"],
+        }),
+        driverCard({
+          color: "#66ff99",
+          title: "ucode-intel (mikrokod)",
+          sub: "İşlemci mikrokod güncellemeleri.",
+          cmd: "sudo zypper install -y ucode-intel",
+          kind: "zypper.install",
+          pkgs: ["ucode-intel"],
+        }),
+      ].join("");
+
     default:
       return `<div class="muted">Intel için bu distro öneri yok.</div>`;
   }
@@ -281,6 +458,161 @@ function codecsCardsFor(family) {
       });
     default:
       return `<div class="muted">Codec öneri yok.</div>`;
+  }
+}
+
+/* ---------- Güç & termal (laptop/iGPU) ---------- */
+
+function powerCardsFor(family) {
+  // thermald, tlp ve power-profiles-daemon — özellikle Intel iGPU
+  // laptop'larda anlamlı. AMD Ryzen laptop için power-profiles-daemon iyi.
+  switch (family) {
+    case "apt":
+      return [
+        driverCard({
+          color: "#00f0ff",
+          title: "power-profiles-daemon",
+          sub: "GNOME/KDE güç profili menüsünü besler. 'Performans / Dengeli / Güç Tasarrufu' geçişi tek tıkla.",
+          cmd: "sudo apt install -y power-profiles-daemon",
+          kind: "apt.install",
+          pkgs: ["power-profiles-daemon"],
+        }),
+        driverCard({
+          color: "#ffd400",
+          title: "thermald (Intel termal kontrolü)",
+          sub: "Intel CPU sıcaklığını proaktif yönetir, throttling'i optimum noktada tetikler. Laptop'larda performans + sessizlik.",
+          cmd: "sudo apt install -y thermald",
+          kind: "apt.install",
+          pkgs: ["thermald"],
+        }),
+        driverCard({
+          color: "#b400ff",
+          title: "TLP (gelişmiş güç yönetimi)",
+          sub: "Laptop için detaylı güç yönetimi — CPU governor, USB autosuspend, SATA link power. power-profiles-daemon'a alternatif (ikisi birden kurulmamalı).",
+          cmd: "sudo apt install -y tlp tlp-rdw",
+          kind: "apt.install",
+          pkgs: ["tlp", "tlp-rdw"],
+        }),
+        driverCard({
+          color: "#ff0099",
+          title: "fwupd (firmware güncellemeleri)",
+          sub: "LVFS üzerinden BIOS/UEFI, SSD firmware, dock firmware otomatik güncelleme. Donanım üreticisi destekliyorsa altın.",
+          cmd: "sudo apt install -y fwupd",
+          kind: "apt.install",
+          pkgs: ["fwupd"],
+        }),
+      ].join("");
+
+    case "dnf":
+      return [
+        driverCard({
+          color: "#00f0ff",
+          title: "power-profiles-daemon",
+          sub: "Fedora'da varsayılan. Yoksa kur. GNOME/KDE güç profili menüsünü etkinleştirir.",
+          cmd: "sudo dnf install -y power-profiles-daemon",
+          kind: "dnf.install",
+          pkgs: ["power-profiles-daemon"],
+        }),
+        driverCard({
+          color: "#ffd400",
+          title: "thermald",
+          sub: "Intel CPU termal yönetim daemon'u.",
+          cmd: "sudo dnf install -y thermald",
+          kind: "dnf.install",
+          pkgs: ["thermald"],
+        }),
+        driverCard({
+          color: "#b400ff",
+          title: "TLP (alternatif)",
+          sub: "power-profiles-daemon'a alternatif gelişmiş güç yönetimi. İkisi aynı anda olmamalı.",
+          cmd: "sudo dnf install -y tlp tlp-rdw",
+          kind: "dnf.install",
+          pkgs: ["tlp", "tlp-rdw"],
+        }),
+        driverCard({
+          color: "#ff0099",
+          title: "fwupd (firmware güncellemeleri)",
+          sub: "Fedora'da default kurulu. Yoksa LVFS üzerinden donanım firmware güncellemeleri.",
+          cmd: "sudo dnf install -y fwupd",
+          kind: "dnf.install",
+          pkgs: ["fwupd"],
+        }),
+      ].join("");
+
+    case "pacman":
+      return [
+        driverCard({
+          color: "#00f0ff",
+          title: "power-profiles-daemon",
+          sub: "GNOME/KDE güç profili menüsü için.",
+          cmd: "sudo pacman -S --noconfirm power-profiles-daemon",
+          kind: "pacman.install",
+          pkgs: ["power-profiles-daemon"],
+        }),
+        driverCard({
+          color: "#ffd400",
+          title: "thermald",
+          sub: "Intel termal yönetim daemon'u.",
+          cmd: "sudo pacman -S --noconfirm thermald",
+          kind: "pacman.install",
+          pkgs: ["thermald"],
+        }),
+        driverCard({
+          color: "#b400ff",
+          title: "TLP",
+          sub: "Detaylı laptop güç yönetimi (alternatif).",
+          cmd: "sudo pacman -S --noconfirm tlp tlp-rdw",
+          kind: "pacman.install",
+          pkgs: ["tlp", "tlp-rdw"],
+        }),
+        driverCard({
+          color: "#ff0099",
+          title: "fwupd",
+          sub: "LVFS firmware güncellemeleri.",
+          cmd: "sudo pacman -S --noconfirm fwupd",
+          kind: "pacman.install",
+          pkgs: ["fwupd"],
+        }),
+      ].join("");
+
+    case "zypper":
+      return [
+        driverCard({
+          color: "#00f0ff",
+          title: "power-profiles-daemon",
+          sub: "Güç profili menüsü desteği.",
+          cmd: "sudo zypper install -y power-profiles-daemon",
+          kind: "zypper.install",
+          pkgs: ["power-profiles-daemon"],
+        }),
+        driverCard({
+          color: "#ffd400",
+          title: "thermald",
+          sub: "Intel termal yönetimi.",
+          cmd: "sudo zypper install -y thermald",
+          kind: "zypper.install",
+          pkgs: ["thermald"],
+        }),
+        driverCard({
+          color: "#b400ff",
+          title: "TLP",
+          sub: "Laptop güç yönetimi.",
+          cmd: "sudo zypper install -y tlp tlp-rdw",
+          kind: "zypper.install",
+          pkgs: ["tlp", "tlp-rdw"],
+        }),
+        driverCard({
+          color: "#ff0099",
+          title: "fwupd",
+          sub: "Firmware güncellemeleri.",
+          cmd: "sudo zypper install -y fwupd",
+          kind: "zypper.install",
+          pkgs: ["fwupd"],
+        }),
+      ].join("");
+
+    default:
+      return `<div class="muted">Bu distro için güç/termal önerisi yok.</div>`;
   }
 }
 

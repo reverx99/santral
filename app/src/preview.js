@@ -372,6 +372,7 @@ const MOCK = {
     gpus: [
       { vendor: "NVIDIA Corporation", product: "GA106 [GeForce RTX 3060]", raw: "01:00.0 \"VGA compatible controller\" \"NVIDIA Corp.\" \"GA106 [GeForce RTX 3060]\"" },
       { vendor: "Advanced Micro Devices, Inc. [AMD/ATI]", product: "Cezanne [Radeon Graphics]", raw: "..." },
+      { vendor: "Intel Corporation", product: "Raptor Lake-P [Iris Xe Graphics]", raw: "..." },
     ],
     audio: [
       { vendor: "NVIDIA Corporation", product: "GA106 High Definition Audio Controller", raw: "" },
