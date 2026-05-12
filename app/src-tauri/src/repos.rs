@@ -52,23 +52,31 @@ fn detect_native_kind() -> String {
 fn collect_apt() -> Vec<RepoEntry> {
     let mut out = Vec::new();
     // /etc/apt/sources.list
-    parse_apt_one_per_line(Path::new("/etc/apt/sources.list"), &mut out);
-    // /etc/apt/sources.list.d/*.list
+    parse_apt_one_per_line(Path::new("/etc/apt/sources.list"), None, &mut out);
+    // /etc/apt/sources.list.d/*.list ve *.list.disabled
     if let Ok(entries) = std::fs::read_dir("/etc/apt/sources.list.d") {
         for e in entries.flatten() {
             let path = e.path();
             let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
             if name.ends_with(".list") {
-                parse_apt_one_per_line(&path, &mut out);
+                parse_apt_one_per_line(&path, None, &mut out);
+            } else if name.ends_with(".list.disabled") {
+                // Dosya rename'le devre dışı bırakılmış — içindeki tüm
+                // girdileri enabled=false olarak işaretle.
+                parse_apt_one_per_line(&path, Some(false), &mut out);
             } else if name.ends_with(".sources") {
                 parse_apt_deb822(&path, &mut out);
+            } else if name.ends_with(".sources.disabled") {
+                let mut tmp = Vec::new();
+                parse_apt_deb822(&path, &mut tmp);
+                for mut e in tmp { e.enabled = false; out.push(e); }
             }
         }
     }
     out
 }
 
-fn parse_apt_one_per_line(path: &Path, out: &mut Vec<RepoEntry>) {
+fn parse_apt_one_per_line(path: &Path, force_enabled: Option<bool>, out: &mut Vec<RepoEntry>) {
     let Ok(content) = std::fs::read_to_string(path) else { return; };
     for raw in content.lines() {
         let line = raw.trim();
@@ -103,7 +111,7 @@ fn parse_apt_one_per_line(path: &Path, out: &mut Vec<RepoEntry>) {
             id: format!("{}::{}::{}", parts[0], uri, suite),
             name: label,
             url: uri,
-            enabled,
+            enabled: force_enabled.unwrap_or(enabled),
             source_path: path.display().to_string(),
             gpg_check: None,
             official: false,

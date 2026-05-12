@@ -89,6 +89,15 @@ class TaskManager {
 
   getLogs(id) { return this.logs.get(id) || []; }
 
+  /** Scanner task'ı tamamlanmışsa log'larını gözleyip basit bir özet üret.
+   *  Tehdit/uyarı sayısı, "temiz" durumu, ya da hata. */
+  scannerSummary(task) {
+    if (!task || !task.kind || !task.kind.startsWith("scanner.")) return null;
+    const lines = (this.logs.get(task.id) || []).map(l => l.text);
+    const scanner = task.kind.replace(/^scanner\./, "");
+    return parseScannerLog(scanner, lines, task);
+  }
+
   /** Bir aksiyonu kuyruğa al. dry_run: settings.dryRun varsayılan true. */
   async start(req) {
     const dry = settings.get("dryRun") !== false;
@@ -129,6 +138,66 @@ class TaskManager {
   openDrawer()  { this.drawerOpen = true;  this.emit(); }
   closeDrawer() { this.drawerOpen = false; this.emit(); }
   toggleDrawer(){ this.drawerOpen = !this.drawerOpen; this.emit(); }
+}
+
+/** Tarama log'larını scanner'a göre okuyup tehdit/uyarı sayısı çıkarır.
+ *  Karmaşık parse değil — desen tabanlı bir hızlı özet, "% temiz"/"X uyarı". */
+function parseScannerLog(scanner, lines, task) {
+  if (!task || (task.status !== "succeeded" && task.status !== "failed")) {
+    return { state: "pending", level: "info", message: "Devam ediyor…" };
+  }
+  let threats = 0, warnings = 0;
+  const hits = [];
+  const text = lines.join("\n");
+
+  const grep = (re) => {
+    let m, n = 0;
+    const r = new RegExp(re.source || re, "gm" + (re.flags || ""));
+    while ((m = r.exec(text)) !== null) { n++; if (hits.length < 8) hits.push(m[0].trim().slice(0, 200)); }
+    return n;
+  };
+
+  switch (scanner) {
+    case "chkrootkit":
+      threats = grep(/INFECTED/i);
+      warnings = grep(/^Searching for .* possible rootkit/im);
+      break;
+    case "rkhunter":
+      threats = grep(/\bPossible rootkit\b|\bWarning: .*\bpossible\b/i)
+              + grep(/Vulnerable/i);
+      warnings = grep(/\[ Warning \]|\[Warning\]/);
+      break;
+    case "clamav":
+      threats = grep(/\sFOUND\s*$/m);
+      break;
+    case "maldet":
+      threats = grep(/^\{HEX\}|^\{MD5\}|hits found: \d+/im);
+      break;
+    case "lynis":
+      warnings = grep(/^Warning:|^Suggestion:/m) + grep(/\[ WARNING \]/);
+      break;
+    case "aide":
+      threats = grep(/^changed:|^added:|^removed:/im);
+      break;
+    case "debsums":
+      threats = grep(/FAILED$/m);
+      break;
+    case "rpm-verify":
+      threats = grep(/^[.SM5DLUGTPc?]+\s+\S/);   // verify flag satırları
+      break;
+    default:
+      return null;
+  }
+  if (task.status === "failed" && threats === 0 && warnings === 0) {
+    return { state: "error", level: "bad", message: task.error || "Tarayıcı hata verdi.", hits };
+  }
+  if (threats > 0) {
+    return { state: "threats", level: "bad", message: `${threats} olası tehdit / şüpheli kayıt`, hits };
+  }
+  if (warnings > 0) {
+    return { state: "warnings", level: "warn", message: `${warnings} uyarı (inceleyin)`, hits };
+  }
+  return { state: "clean", level: "good", message: "Temiz — hiçbir şey bulunamadı.", hits: [] };
 }
 
 export const tasks = new TaskManager();

@@ -13,11 +13,33 @@ function repoActionKind(repoKind, enable) {
     case "zypper":  return enable ? "zypper.repo-enable"  : "zypper.repo-disable";
     case "flatpak": return enable ? "flatpak.user.remote-modify-enable"
                                   : "flatpak.user.remote-modify-disable";
+    // APT için file rename mantığı; entry.enabled true ise disable (mv .disabled),
+    // false ise enable (mv geri). Repo card için kind ile birlikte source_path
+    // gerekir — repoToggleBtn'de wire edilirken karar verilir.
+    case "apt":     return enable ? "apt.repo-file-enable" : "apt.repo-file-disable";
     default: return null;
   }
 }
 function repoDeleteKind(repoKind) {
-  return repoKind === "flatpak" ? "flatpak.user.remote-delete" : null;
+  switch (repoKind) {
+    case "flatpak": return "flatpak.user.remote-delete";
+    case "apt":     return "apt.repo-file-remove";
+    case "dnf":     return "dnf.repo-file-remove";
+    case "zypper":  return "zypper.repo-file-remove";
+    default:        return null;
+  }
+}
+
+/** Toggle/delete için backend argümanı seç — flatpak'ta name, diğerlerinde file path. */
+function repoArgFor(r) {
+  if (r.kind === "flatpak" || r.kind === "dnf" || r.kind === "zypper") {
+    // DNF/Zypper enable/disable için repo id (section adı); file remove için ise path
+    return r.id;
+  }
+  if (r.kind === "apt") {
+    return r.source_path;
+  }
+  return r.id;
 }
 
 const NATIVE_LABELS = {
@@ -35,10 +57,29 @@ export async function renderRepolar(host, { invoke }) {
       num: "// 07",
       title: "REPOLAR",
       actions: `
-        <button class="btn" id="add-repo" disabled title="yakında">+ Repo ekle</button>
+        <button class="btn" id="add-repo">+ Repo ekle</button>
         <button class="btn" id="refresh">⟲ Yenile</button>
       `,
     })}
+
+    <section id="repo-add-modal" class="repo-add-modal" hidden>
+      <form id="repo-add-form" class="repo-add-form">
+        <header><strong>Yeni depo ekle</strong> <span class="muted">— hepsi pkexec ile sistem geneline yazılır</span></header>
+        <label>Depo türü
+          <select id="repo-add-type" name="type">
+            <option value="flatpak">Flatpak remote (kullanıcı, root yok)</option>
+            <option value="dnf">DNF .repo URL'i</option>
+            <option value="zypper">Zypper repo</option>
+            <option value="apt-ppa">APT PPA (Ubuntu/Mint)</option>
+          </select>
+        </label>
+        <div id="repo-add-fields"></div>
+        <div class="repo-add-actions">
+          <button type="button" class="btn" id="repo-add-cancel">Vazgeç</button>
+          <button type="submit" class="btn btn-primary">▶ Ekle</button>
+        </div>
+      </form>
+    </section>
 
     <div class="repo-stats">
       <div class="repo-stat">
@@ -80,37 +121,114 @@ export async function renderRepolar(host, { invoke }) {
   host.querySelectorAll("[data-repo-toggle]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const repoKind = btn.dataset.repoKind;
-      const id = btn.dataset.repoId;
+      const arg = btn.dataset.repoArg;
       const enable = btn.dataset.repoToggle === "enable";
       const kind = repoActionKind(repoKind, enable);
       if (!kind) return;
       try {
         await tasks.start({
-          kind,
-          args: [id],
-          label: `${enable ? "Etkinleştir" : "Devre dışı bırak"}: ${id} (${repoKind})`,
+          kind, args: [arg],
+          label: `${enable ? "Etkinleştir" : "Devre dışı bırak"}: ${btn.dataset.repoLabel || arg} (${repoKind})`,
         });
       } catch {}
     });
   });
 
-  // Remove (sadece flatpak için)
+  // Remove
   host.querySelectorAll("[data-repo-remove]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const repoKind = btn.dataset.repoKind;
-      const id = btn.dataset.repoRemove;
+      const arg = btn.dataset.repoRemove;
       const kind = repoDeleteKind(repoKind);
       if (!kind) return;
-      const ok = confirm(`"${id}" remote'unu kaldırmak istediğine emin misin?\n\nBu yalnızca tanımı siler, bu remote'tan kurulu uygulamalar etkilenmez ama güncelleme alamayacaklardır.`);
+      const label = btn.dataset.repoLabel || arg;
+      const note = repoKind === "flatpak"
+        ? "Bu yalnızca remote tanımını siler; kurulu uygulamalar dokunulmaz ama güncelleme alamazlar."
+        : "Bu komut depo dosyasını silecek. Dosyada birden fazla depo tanımı varsa hepsi gider.";
+      const ok = confirm(`"${label}" deposunu kaldır?\n\n${note}\n\nDevam edilsin mi?`);
       if (!ok) return;
       try {
-        await tasks.start({
-          kind, args: [id],
-          label: `Sil: ${id} (${repoKind} remote)`,
-        });
+        await tasks.start({ kind, args: [arg], label: `Sil: ${label} (${repoKind})` });
       } catch {}
     });
   });
+
+  // "+ Repo ekle" butonu
+  host.querySelector("#add-repo")?.addEventListener("click", () => {
+    const modal = host.querySelector("#repo-add-modal");
+    if (!modal) return;
+    modal.hidden = !modal.hidden;
+  });
+  host.querySelector("#repo-add-cancel")?.addEventListener("click", () => {
+    const modal = host.querySelector("#repo-add-modal");
+    if (modal) modal.hidden = true;
+  });
+  wireAddRepoForm(host);
+}
+
+function wireAddRepoForm(host) {
+  const form = host.querySelector("#repo-add-form");
+  if (!form) return;
+  const typeSel = form.querySelector("#repo-add-type");
+  const fieldsBox = form.querySelector("#repo-add-fields");
+  const updateFields = () => {
+    const t = typeSel.value;
+    fieldsBox.innerHTML = repoAddFieldsHtml(t);
+  };
+  typeSel.addEventListener("change", updateFields);
+  updateFields();
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const t = typeSel.value;
+    const data = Object.fromEntries(new FormData(form).entries());
+    const req = repoAddRequest(t, data);
+    if (!req) return;
+    try { await tasks.start(req); } catch {}
+    host.querySelector("#repo-add-modal").hidden = true;
+    form.reset();
+    updateFields();
+  });
+}
+
+function repoAddFieldsHtml(type) {
+  switch (type) {
+    case "flatpak":
+      return `
+        <label>Remote adı <input name="name" required pattern="[A-Za-z0-9_-]+" placeholder="flathub" /></label>
+        <label>Repo URL <input name="url" required type="url" placeholder="https://flathub.org/repo/flathub.flatpakrepo" /></label>
+      `;
+    case "dnf":
+      return `
+        <label>Repo URL (.repo dosyasına işaret eden) <input name="url" required type="url" placeholder="https://example.com/example.repo" /></label>
+      `;
+    case "zypper":
+      return `
+        <label>Repo URL <input name="url" required type="url" placeholder="https://download.opensuse.org/repositories/..." /></label>
+        <label>Repo adı <input name="name" required pattern="[A-Za-z0-9._:-]+" placeholder="my-repo" /></label>
+      `;
+    case "apt-ppa":
+      return `
+        <label>PPA <input name="ppa" required pattern="ppa:[A-Za-z0-9_./-]+" placeholder="ppa:savoury1/multimedia" /></label>
+      `;
+    default:
+      return "";
+  }
+}
+
+function repoAddRequest(type, data) {
+  switch (type) {
+    case "flatpak":
+      return { kind: "flatpak.user.remote-add", args: [data.name, data.url], label: `Flatpak remote ekle: ${data.name}` };
+    case "dnf":
+      return { kind: "dnf.repo-add", args: [data.url], label: `DNF repo ekle` };
+    case "zypper":
+      return { kind: "zypper.repo-add", args: [data.url, data.name], label: `Zypper repo ekle: ${data.name}` };
+    case "apt-ppa":
+      return { kind: "apt.repo-add-ppa", args: [data.ppa], label: `APT PPA ekle: ${data.ppa}` };
+    default:
+      return null;
+  }
 }
 
 function repoRow(r) {
@@ -155,10 +273,12 @@ function repoToggleBtn(r) {
       ${r.enabled ? "● Devre dışı bırak" : "○ Etkinleştir"}
     </button>`;
   }
+  const arg = repoArgFor(r);
   return `<button class="btn install-btn"
     data-repo-toggle="${r.enabled ? "disable" : "enable"}"
     data-repo-kind="${esc(r.kind)}"
-    data-repo-id="${esc(r.id)}"
+    data-repo-arg="${esc(arg)}"
+    data-repo-label="${esc(r.name || r.id)}"
     title="${r.enabled ? "Bu depoyu devre dışı bırak" : "Bu depoyu etkinleştir"}">
     ${r.enabled ? "● Devre dışı bırak" : "○ Etkinleştir"}
   </button>`;
@@ -169,10 +289,12 @@ function repoRemoveBtn(r) {
   if (!kind) {
     return `<button class="btn install-btn off" disabled title="${esc(r.kind)} repo dosyasını elle silmek gerek">× Kaldır</button>`;
   }
+  const arg = repoArgFor(r);
   return `<button class="btn install-btn off"
-    data-repo-remove="${esc(r.id)}"
+    data-repo-remove="${esc(arg)}"
     data-repo-kind="${esc(r.kind)}"
-    title="Bu remote'u tamamen kaldır">× Kaldır</button>`;
+    data-repo-label="${esc(r.name || r.id)}"
+    title="${r.kind === "flatpak" ? "Bu remote'u kaldır" : "Bu deponun yapılandırma dosyasını sil"}">× Kaldır</button>`;
 }
 
 function repoColor(kind) {

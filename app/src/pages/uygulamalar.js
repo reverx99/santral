@@ -52,6 +52,7 @@ export async function renderUygulamalar(host, { invoke }) {
     repoSearch: null,    // { query, native: [], flatpak: [], elapsed_ms }
     repoSearching: false,
     searchId: 0,
+    selected: new Set(), // toplu kurulum: app.id'leri
   };
 
   host.innerHTML = `
@@ -83,6 +84,13 @@ export async function renderUygulamalar(host, { invoke }) {
     <div class="apps-section-head" id="apps-curated-head">
       <span>Küratörlü Arşiv</span>
       <span class="muted" id="apps-curated-count"></span>
+    </div>
+
+    <div id="bulk-bar" class="bulk-bar" hidden>
+      <span class="bulk-count"><strong id="bulk-count">0</strong> seçili</span>
+      <span class="muted" id="bulk-breakdown"></span>
+      <button class="btn" id="bulk-clear">Seçimi temizle</button>
+      <button class="btn btn-primary" id="bulk-install">▶ Seçilenleri kur</button>
     </div>
 
     <div class="apps-grid" id="apps-grid"></div>
@@ -162,6 +170,32 @@ function wire(host) {
     );
     paint(host);
   });
+
+  // Bulk install bar
+  host.querySelector("#bulk-clear")?.addEventListener("click", () => {
+    _state.selected.clear();
+    paint(host);
+  });
+  host.querySelector("#bulk-install")?.addEventListener("click", async () => {
+    const ids = Array.from(_state.selected);
+    if (ids.length === 0) return;
+    const grouped = groupSelectedBySource(ids);
+    // Tek kaynak başına tek pkexec — N paket aynı anda kurulur, polkit cache'i
+    // sayesinde genelde tek parola yeter.
+    for (const [src, pkgs] of Object.entries(grouped)) {
+      const kind = SOURCE_KIND[src];
+      if (!kind) continue;
+      try {
+        await tasks.start({
+          kind,
+          args: pkgs,
+          label: `${pkgs.length} paket kur (${SOURCE_LABELS[src] || src})`,
+        });
+      } catch {}
+    }
+    _state.selected.clear();
+    paint(host);
+  });
 }
 
 async function triggerRepoSearch(host) {
@@ -196,11 +230,65 @@ function paint(host) {
   if (apps.length === 0) {
     grid.innerHTML = "";
     empty.hidden = false;
-    return;
+  } else {
+    empty.hidden = true;
+    grid.innerHTML = apps.map(a => appCard(a, _state.cat)).join("");
+    wireFlatpakButtons(grid);
+    wireBulkSelect(host, grid);
   }
-  empty.hidden = true;
-  grid.innerHTML = apps.map(a => appCard(a, _state.cat)).join("");
-  wireFlatpakButtons(grid);
+  paintBulkBar(host);
+}
+
+function wireBulkSelect(host, scope) {
+  scope.querySelectorAll("[data-app-pick]").forEach((cb) => {
+    cb.addEventListener("change", (e) => {
+      const id = e.target.dataset.appPick;
+      if (e.target.checked) _state.selected.add(id);
+      else _state.selected.delete(id);
+      // sadece kart sınıfını ve bulk-bar'ı güncelle, tam paint yapma
+      const card = e.target.closest(".app-card");
+      if (card) card.classList.toggle("is-bulk-selected", e.target.checked);
+      paintBulkBar(host);
+    });
+  });
+}
+
+function paintBulkBar(host) {
+  const bar = host.querySelector("#bulk-bar");
+  if (!bar) return;
+  const ids = Array.from(_state.selected);
+  if (ids.length === 0) { bar.hidden = true; return; }
+  bar.hidden = false;
+  host.querySelector("#bulk-count").textContent = String(ids.length);
+
+  // Kaynaklara göre grupla (preferred PM önce)
+  const grouped = groupSelectedBySource(ids);
+  const breakdown = Object.entries(grouped)
+    .map(([src, pkgs]) => `${pkgs.length} × ${SOURCE_LABELS[src] || src}`)
+    .join(" · ");
+  host.querySelector("#bulk-breakdown").textContent = breakdown;
+}
+
+function groupSelectedBySource(ids) {
+  const detected = _state.cat.detected_sources || [];
+  const preferred = _state.cat.preferred_source;
+  const order = (src) =>
+    (src === preferred ? 0 :
+     ["apt","dnf","pacman","zypper"].includes(src) ? 1 :
+     src === "flatpak" ? 2 : 3);
+  const groups = {};
+  for (const id of ids) {
+    const app = _state.cat.apps.find(a => a.id === id);
+    if (!app) continue;
+    const sources = Object.keys(app.sources)
+      .filter((s) => detected.includes(s))
+      .sort((a, b) => order(a) - order(b));
+    if (sources.length === 0) continue;
+    const src = sources[0];
+    groups[src] = groups[src] || [];
+    groups[src].push(app.sources[src]);
+  }
+  return groups;
 }
 
 function wireFlatpakButtons(scope) {
@@ -385,9 +473,17 @@ function appCard(app, cat) {
     ? `<a class="app-home" href="${esc(app.homepage)}" target="_blank" rel="noopener" title="${esc(app.homepage)}">↗</a>`
     : "";
 
+  const bulkEnabled = installable.length > 0;
+  const checked = _state.selected.has(app.id);
   return `
-    <article class="app-card fade-in" style="--c:${esc(color)}">
+    <article class="app-card fade-in${checked ? " is-bulk-selected" : ""}" style="--c:${esc(color)}">
       <header class="app-head">
+        ${bulkEnabled
+          ? `<label class="app-pick" title="toplu kurulum seçimi">
+               <input type="checkbox" class="app-pick-input" data-app-pick="${esc(app.id)}" ${checked ? "checked" : ""}/>
+               <span class="app-pick-box"></span>
+             </label>`
+          : `<span class="app-pick app-pick-empty"></span>`}
         <span class="app-cat">${esc(category?.label || app.category.toUpperCase())}</span>
         ${home}
       </header>

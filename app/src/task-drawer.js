@@ -146,11 +146,32 @@ function renderTask(t) {
           <button class="task-item-btn" data-clear="${t.id}" title="kayıttan sil">×</button>
         `}
       </div>
+      ${renderScannerSummary(t)}
       ${open ? `
         <div class="task-item-cmd"><code>${esc(t.command)}</code></div>
         <pre class="task-item-log">${lines.map(renderLogLine).join("")}</pre>
       ` : ""}
     </li>
+  `;
+}
+
+function renderScannerSummary(t) {
+  if (!t || !t.kind || !t.kind.startsWith("scanner.")) return "";
+  const s = tasks.scannerSummary(t);
+  if (!s) return "";
+  const cls = `scan-summary-${s.level}`;
+  const glyph = s.level === "good" ? "✓"
+    : s.level === "warn" ? "▲"
+    : s.level === "bad" ? "✕" : "ⓘ";
+  const hitsHtml = (s.hits && s.hits.length)
+    ? `<details class="scan-hits"><summary>${s.hits.length} bulgu örneği</summary><pre>${s.hits.map(esc).join("\n")}</pre></details>`
+    : "";
+  return `
+    <div class="task-scan-summary ${cls}">
+      <span class="task-scan-glyph">${glyph}</span>
+      <span class="task-scan-msg">${esc(s.message)}</span>
+      ${hitsHtml}
+    </div>
   `;
 }
 

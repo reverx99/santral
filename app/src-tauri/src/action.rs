@@ -112,15 +112,15 @@ fn resolve_command(req: &ActionRequest) -> Result<Resolved, String> {
         // ============= FLATPAK (--user, root yok) =============
 
         "flatpak.user.install" => {
-            let app_id = req.args.first().ok_or("eksik appid")?;
-            check_appid(app_id)?;
+            let pkgs = check_pkglist(&req.args)?;
+            let mut a: Vec<String> = vec![
+                "install".into(), "--user".into(),
+                "--noninteractive".into(), "--assumeyes".into(),
+            ];
+            a.extend(pkgs);
             Ok(Resolved {
                 program: "flatpak".into(),
-                args: vec![
-                    "install".into(), "--user".into(),
-                    "--noninteractive".into(), "--assumeyes".into(),
-                    app_id.clone(),
-                ],
+                args: a,
                 needs_root: false, needs_native_lock: false,
             })
         }
@@ -163,12 +163,13 @@ fn resolve_command(req: &ActionRequest) -> Result<Resolved, String> {
         // ============= NATIVE INSTALL (root via pkexec) =============
 
         "apt.install" => {
-            let pkg = req.args.first().ok_or("eksik paket adı")?;
-            check_pkgname(pkg)?;
-            Ok(pkexec_wrap(vec![
+            let pkgs = check_pkglist(&req.args)?;
+            let mut a: Vec<String> = vec![
                 "env".into(), "DEBIAN_FRONTEND=noninteractive".into(),
-                "apt-get".into(), "install".into(), "-y".into(), pkg.clone(),
-            ], true))
+                "apt-get".into(), "install".into(), "-y".into(),
+            ];
+            a.extend(pkgs);
+            Ok(pkexec_wrap(a, true))
         }
         "apt.autoremove" => Ok(pkexec_wrap(vec![
             "env".into(), "DEBIAN_FRONTEND=noninteractive".into(),
@@ -179,11 +180,10 @@ fn resolve_command(req: &ActionRequest) -> Result<Resolved, String> {
         ], true)),
 
         "dnf.install" => {
-            let pkg = req.args.first().ok_or("eksik paket adı")?;
-            check_pkgname(pkg)?;
-            Ok(pkexec_wrap(vec![
-                "dnf".into(), "install".into(), "-y".into(), pkg.clone(),
-            ], true))
+            let pkgs = check_pkglist(&req.args)?;
+            let mut a: Vec<String> = vec!["dnf".into(), "install".into(), "-y".into()];
+            a.extend(pkgs);
+            Ok(pkexec_wrap(a, true))
         }
         "dnf.autoremove" => Ok(pkexec_wrap(vec![
             "dnf".into(), "autoremove".into(), "-y".into(),
@@ -193,11 +193,10 @@ fn resolve_command(req: &ActionRequest) -> Result<Resolved, String> {
         ], true)),
 
         "pacman.install" => {
-            let pkg = req.args.first().ok_or("eksik paket adı")?;
-            check_pkgname(pkg)?;
-            Ok(pkexec_wrap(vec![
-                "pacman".into(), "-S".into(), "--noconfirm".into(), pkg.clone(),
-            ], true))
+            let pkgs = check_pkglist(&req.args)?;
+            let mut a: Vec<String> = vec!["pacman".into(), "-S".into(), "--noconfirm".into()];
+            a.extend(pkgs);
+            Ok(pkexec_wrap(a, true))
         }
         "pacman.autoremove" => {
             // pacman orphan listesi yoksa hata vermesin — sh -c kullanmamak için
@@ -213,11 +212,10 @@ fn resolve_command(req: &ActionRequest) -> Result<Resolved, String> {
         ], true)),
 
         "zypper.install" => {
-            let pkg = req.args.first().ok_or("eksik paket adı")?;
-            check_pkgname(pkg)?;
-            Ok(pkexec_wrap(vec![
-                "zypper".into(), "install".into(), "-y".into(), pkg.clone(),
-            ], true))
+            let pkgs = check_pkglist(&req.args)?;
+            let mut a: Vec<String> = vec!["zypper".into(), "install".into(), "-y".into()];
+            a.extend(pkgs);
+            Ok(pkexec_wrap(a, true))
         }
         "zypper.autoremove" => Ok(pkexec_wrap(vec![
             "zypper".into(), "rm".into(), "--clean-deps".into(), "-y".into(),
@@ -227,61 +225,59 @@ fn resolve_command(req: &ActionRequest) -> Result<Resolved, String> {
         ], true)),
 
         "snap.install" => {
-            let pkg = req.args.first().ok_or("eksik paket adı")?;
-            check_pkgname(pkg)?;
-            Ok(pkexec_wrap(vec![
-                "snap".into(), "install".into(), pkg.clone(),
-            ], false)) // snap kendisi paket yöneticisi değil, kilide muaf
+            let pkgs = check_pkglist(&req.args)?;
+            let mut a: Vec<String> = vec!["snap".into(), "install".into()];
+            a.extend(pkgs);
+            Ok(pkexec_wrap(a, false))
         }
 
         // ============= NATIVE REMOVE / UNINSTALL (root) =============
 
         "apt.remove" => {
-            let pkg = req.args.first().ok_or("eksik paket adı")?;
-            check_pkgname(pkg)?;
-            Ok(pkexec_wrap(vec![
+            let pkgs = check_pkglist(&req.args)?;
+            let mut a: Vec<String> = vec![
                 "env".into(), "DEBIAN_FRONTEND=noninteractive".into(),
-                "apt-get".into(), "remove".into(), "-y".into(), pkg.clone(),
-            ], true))
+                "apt-get".into(), "remove".into(), "-y".into(),
+            ];
+            a.extend(pkgs);
+            Ok(pkexec_wrap(a, true))
         }
         "apt.purge" => {
-            let pkg = req.args.first().ok_or("eksik paket adı")?;
-            check_pkgname(pkg)?;
-            Ok(pkexec_wrap(vec![
+            let pkgs = check_pkglist(&req.args)?;
+            let mut a: Vec<String> = vec![
                 "env".into(), "DEBIAN_FRONTEND=noninteractive".into(),
-                "apt-get".into(), "purge".into(), "-y".into(), pkg.clone(),
-            ], true))
+                "apt-get".into(), "purge".into(), "-y".into(),
+            ];
+            a.extend(pkgs);
+            Ok(pkexec_wrap(a, true))
         }
         "dnf.remove" => {
-            let pkg = req.args.first().ok_or("eksik paket adı")?;
-            check_pkgname(pkg)?;
-            Ok(pkexec_wrap(vec![
-                "dnf".into(), "remove".into(), "-y".into(), pkg.clone(),
-            ], true))
+            let pkgs = check_pkglist(&req.args)?;
+            let mut a: Vec<String> = vec!["dnf".into(), "remove".into(), "-y".into()];
+            a.extend(pkgs);
+            Ok(pkexec_wrap(a, true))
         }
         "pacman.remove" => {
-            let pkg = req.args.first().ok_or("eksik paket adı")?;
-            check_pkgname(pkg)?;
-            // -R: kaldır, -n: yapılandırma dosyalarını sakla yerine sil,
-            // -s: artık gerek duyulmayan bağımlılıkları da kaldır.
-            Ok(pkexec_wrap(vec![
-                "pacman".into(), "-Rns".into(), "--noconfirm".into(), pkg.clone(),
-            ], true))
+            let pkgs = check_pkglist(&req.args)?;
+            // -R: kaldır, -n: yapılandırma dosyalarını da sil, -s: artık gereksiz deps
+            let mut a: Vec<String> = vec!["pacman".into(), "-Rns".into(), "--noconfirm".into()];
+            a.extend(pkgs);
+            Ok(pkexec_wrap(a, true))
         }
         "zypper.remove" => {
-            let pkg = req.args.first().ok_or("eksik paket adı")?;
-            check_pkgname(pkg)?;
-            Ok(pkexec_wrap(vec![
+            let pkgs = check_pkglist(&req.args)?;
+            let mut a: Vec<String> = vec![
                 "zypper".into(), "remove".into(), "-y".into(),
-                "--clean-deps".into(), pkg.clone(),
-            ], true))
+                "--clean-deps".into(),
+            ];
+            a.extend(pkgs);
+            Ok(pkexec_wrap(a, true))
         }
         "snap.remove" => {
-            let pkg = req.args.first().ok_or("eksik paket adı")?;
-            check_pkgname(pkg)?;
-            Ok(pkexec_wrap(vec![
-                "snap".into(), "remove".into(), pkg.clone(),
-            ], false))
+            let pkgs = check_pkglist(&req.args)?;
+            let mut a: Vec<String> = vec!["snap".into(), "remove".into()];
+            a.extend(pkgs);
+            Ok(pkexec_wrap(a, false))
         }
 
         // ============= UPGRADE / SYSTEM UPDATE (root) =============
@@ -370,6 +366,71 @@ fn resolve_command(req: &ActionRequest) -> Result<Resolved, String> {
                 needs_root: false, needs_native_lock: false,
             })
         }
+        // --- APT repo dosya yönetimi (sources.list.d) ---
+        "apt.repo-file-disable" => {
+            let path = req.args.first().ok_or("eksik dosya yolu")?;
+            check_apt_sources_path(path)?;
+            if path.ends_with(".disabled") {
+                return Err("dosya zaten devre dışı".into());
+            }
+            Ok(pkexec_wrap(vec![
+                "mv".into(), path.clone(), format!("{path}.disabled"),
+            ], true))
+        }
+        "apt.repo-file-enable" => {
+            let path = req.args.first().ok_or("eksik dosya yolu")?;
+            check_apt_sources_path(path)?;
+            let target = path.strip_suffix(".disabled")
+                .ok_or("dosya zaten etkin (sonu .disabled değil)")?;
+            Ok(pkexec_wrap(vec![
+                "mv".into(), path.clone(), target.to_string(),
+            ], true))
+        }
+        "apt.repo-file-remove" => {
+            let path = req.args.first().ok_or("eksik dosya yolu")?;
+            check_apt_sources_path(path)?;
+            Ok(pkexec_wrap(vec!["rm".into(), path.clone()], true))
+        }
+        "apt.repo-add-ppa" => {
+            let ppa = req.args.first().ok_or("eksik PPA")?;
+            check_ppa(ppa)?;
+            Ok(pkexec_wrap(vec![
+                "add-apt-repository".into(), "-y".into(), ppa.clone(),
+            ], true))
+        }
+
+        // --- DNF repo dosya yönetimi (yum.repos.d) ---
+        "dnf.repo-file-remove" => {
+            let path = req.args.first().ok_or("eksik dosya yolu")?;
+            check_dnf_repos_path(path)?;
+            Ok(pkexec_wrap(vec!["rm".into(), path.clone()], true))
+        }
+        "dnf.repo-add" => {
+            let url = req.args.first().ok_or("eksik URL")?;
+            check_https_url(url)?;
+            Ok(pkexec_wrap(vec![
+                "dnf".into(), "config-manager".into(),
+                "--add-repo".into(), url.clone(),
+            ], true))
+        }
+
+        // --- Zypper repo dosya yönetimi (zypp/repos.d) ---
+        "zypper.repo-file-remove" => {
+            let path = req.args.first().ok_or("eksik dosya yolu")?;
+            check_zypper_repos_path(path)?;
+            Ok(pkexec_wrap(vec!["rm".into(), path.clone()], true))
+        }
+        "zypper.repo-add" => {
+            let url = req.args.first().ok_or("eksik URL")?;
+            let name = req.args.get(1).ok_or("eksik repo adı")?;
+            check_https_url(url)?;
+            check_repo_id(name)?;
+            Ok(pkexec_wrap(vec![
+                "zypper".into(), "addrepo".into(), "--refresh".into(),
+                url.clone(), name.clone(),
+            ], true))
+        }
+
         "flatpak.user.remote-delete" => {
             let name = req.args.first().ok_or("eksik remote adı")?;
             check_remote_name(name)?;
@@ -489,18 +550,32 @@ fn check_https_url(s: &str) -> Result<(), String> {
 }
 
 fn check_pkgname(s: &str) -> Result<(), String> {
-    if s.is_empty() || s.len() > 128 {
+    if s.is_empty() || s.len() > 256 {
         return Err("geçersiz paket adı".into());
     }
-    // apt/dnf/pacman/zypper paket adlarında genelde: harf/rakam, . - _ + ; nadir : (mimari ayırıcı)
-    if !s.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | '+' | ':')) {
+    // apt/dnf/pacman/zypper paket adları + flatpak appid'leri (org.foo.Bar):
+    // harf/rakam, . - _ + : / nadir
+    if !s.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | '+' | ':' | '/')) {
         return Err("paket adında geçersiz karakter".into());
     }
-    // shell meta-karakterlere karşı kuşak — execve kullanılsa bile defansif
     if s.contains("..") || s.starts_with('-') {
         return Err("paket adı şüpheli".into());
     }
     Ok(())
+}
+
+/// Bir liste paket adını doğrular, geçerli olanları döner.
+fn check_pkglist(args: &[String]) -> Result<Vec<String>, String> {
+    if args.is_empty() {
+        return Err("eksik paket adı".into());
+    }
+    if args.len() > 100 {
+        return Err("aynı anda en çok 100 paket kabul edilir".into());
+    }
+    for p in args {
+        check_pkgname(p)?;
+    }
+    Ok(args.to_vec())
 }
 
 fn check_vacuum_duration(s: &str) -> Result<(), String> {
@@ -537,6 +612,83 @@ fn check_fs_path(p: &str) -> Result<(), String> {
     }
     if p.contains('\0') || p.contains('\n') || p.contains('\r') {
         return Err("yolda geçersiz karakter".into());
+    }
+    Ok(())
+}
+
+/// Yalnız /etc/apt/sources.list.d/ altındaki .list / .list.disabled / .sources
+/// dosyalarına izin ver — /etc/apt/sources.list gibi sistem master dosyasına
+/// dokunmaz.
+fn check_apt_sources_path(p: &str) -> Result<(), String> {
+    check_under_dir(p, "/etc/apt/sources.list.d/")?;
+    let name = p.rsplit('/').next().unwrap_or("");
+    if !(name.ends_with(".list")
+        || name.ends_with(".list.disabled")
+        || name.ends_with(".sources")
+        || name.ends_with(".sources.disabled"))
+    {
+        return Err("yalnızca .list / .list.disabled / .sources dosyaları".into());
+    }
+    Ok(())
+}
+
+fn check_dnf_repos_path(p: &str) -> Result<(), String> {
+    check_under_dir(p, "/etc/yum.repos.d/")?;
+    let name = p.rsplit('/').next().unwrap_or("");
+    if !name.ends_with(".repo") {
+        return Err("yalnızca .repo dosyaları".into());
+    }
+    Ok(())
+}
+
+fn check_zypper_repos_path(p: &str) -> Result<(), String> {
+    check_under_dir(p, "/etc/zypp/repos.d/")?;
+    let name = p.rsplit('/').next().unwrap_or("");
+    if !name.ends_with(".repo") {
+        return Err("yalnızca .repo dosyaları".into());
+    }
+    Ok(())
+}
+
+fn check_under_dir(p: &str, base: &str) -> Result<(), String> {
+    if !p.starts_with(base) {
+        return Err(format!("yol {base} altında olmalı"));
+    }
+    if p.contains("..") || p.contains('\0') || p.contains('\n') {
+        return Err("şüpheli yol".into());
+    }
+    let name = &p[base.len()..];
+    if name.is_empty() || name.len() > 128 {
+        return Err("dosya adı geçersiz".into());
+    }
+    // alt dizin yasak — sadece direkt dosya
+    if name.contains('/') {
+        return Err("alt dizinler kabul edilmiyor".into());
+    }
+    if !name.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')) {
+        return Err("dosya adında geçersiz karakter".into());
+    }
+    Ok(())
+}
+
+fn check_ppa(s: &str) -> Result<(), String> {
+    if !s.starts_with("ppa:") {
+        return Err("PPA 'ppa:' ile başlamalı".into());
+    }
+    let rest = &s[4..];
+    if rest.is_empty() || rest.len() > 128 {
+        return Err("PPA adı uzunluğu geçersiz".into());
+    }
+    let parts: Vec<&str> = rest.split('/').collect();
+    if parts.len() != 2 {
+        return Err("PPA formatı: ppa:sahip/ad".into());
+    }
+    for p in &parts {
+        if p.is_empty()
+            || !p.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+        {
+            return Err("PPA'da geçersiz karakter".into());
+        }
     }
     Ok(())
 }
