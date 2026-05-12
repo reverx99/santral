@@ -745,6 +745,7 @@ pub fn start_action(app: AppHandle, req: ActionRequest, dry_run: bool) -> Result
         exit_code: None,
         log_count: 0,
         error: None,
+        pid: None,
     };
     if let Ok(mut map) = tasks().lock() {
         map.insert(id, task.clone());
