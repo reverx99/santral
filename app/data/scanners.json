@@ -3,10 +3,10 @@
   "version": 1,
   "updated": "2026-05-10",
   "categories": [
-    { "id": "rootkit",   "label": "ROOTKIT",        "color": "#ff0099", "glyph": "†" },
-    { "id": "antivirus", "label": "ANTİVİRÜS",      "color": "#00f0ff", "glyph": "▮" },
-    { "id": "audit",     "label": "DENETİM",        "color": "#b400ff", "glyph": "✱" },
-    { "id": "integrity", "label": "BÜTÜNLÜK",       "color": "#ffd400", "glyph": "✚" }
+    { "id": "rootkit",   "label": "Rootkit",        "color": "#ff0099", "glyph": "†" },
+    { "id": "antivirus", "label": "Antivirüs",      "color": "#00f0ff", "glyph": "▮" },
+    { "id": "audit",     "label": "Denetim",        "color": "#b400ff", "glyph": "✱" },
+    { "id": "integrity", "label": "Bütünlük",       "color": "#ffd400", "glyph": "✚" }
   ],
   "scanners": [
     {

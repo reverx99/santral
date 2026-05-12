@@ -363,10 +363,13 @@ button { font: inherit; cursor: pointer; }
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
   border: 1px solid var(--line-2);
-  padding: 3px 8px;
-  font-size: 10px; letter-spacing: 0.18em;
-  color: var(--fg-dim);
-  text-transform: uppercase;
+  padding: 3px 9px;
+  font-family: var(--f-body);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #b0b0bc;
+  text-transform: capitalize;
   background: rgba(0,0,0,0.3);
 }
 .chip.ok   { border-color: color-mix(in srgb, var(--green) 60%, transparent); color: var(--green); text-shadow: 0 0 4px rgba(102,255,153,0.4); }
@@ -535,11 +538,12 @@ button { font: inherit; cursor: pointer; }
 .cat-chip {
   background: transparent;
   border: 1px solid var(--line-2);
-  color: var(--fg-dim);
-  font-family: var(--f-mono);
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  padding: 6px 12px;
+  color: #b8b8c4;
+  font-family: var(--f-body);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  padding: 6px 14px;
   transition: all 0.15s ease;
 }
 .cat-chip:hover {
@@ -645,12 +649,26 @@ button { font: inherit; cursor: pointer; }
   font-size: 11px;
   color: var(--fg-muted);
 }
+.repo-hit-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.repo-hit-icon {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 18px !important;
+  border-radius: 6px !important;
+}
+.repo-hit-title-block { min-width: 0; flex: 1; }
 .repo-hit-title {
   font-family: var(--f-display);
   font-size: 20px;
   letter-spacing: 0.02em;
-  margin: 2px 0 2px;
+  margin: 0;
   color: #fff;
+  line-height: 1.1;
 }
 .repo-hit-id {
   font-family: var(--f-mono);
@@ -773,13 +791,42 @@ button { font: inherit; cursor: pointer; }
   text-shadow: 0 0 6px var(--cyan);
 }
 
+.app-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.app-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 35%, #050507));
+  color: #ffffff;
+  font-family: var(--f-display);
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--c) 50%, transparent);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 0 1px color-mix(in srgb, var(--c) 35%, transparent),
+    0 6px 14px -6px var(--c);
+}
 .app-name {
   font-family: var(--f-display);
   font-size: 28px;
   letter-spacing: 0.02em;
-  margin: 0 0 8px;
+  margin: 0;
   line-height: 1;
   color: #fff;
+  flex: 1;
+  min-width: 0;
 }
 .app-desc {
   font-family: var(--f-body);
@@ -826,11 +873,11 @@ button { font: inherit; cursor: pointer; }
 }
 .src-chip {
   font-family: var(--f-mono);
-  font-size: 9px;
-  letter-spacing: 0.22em;
-  padding: 3px 6px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  padding: 3px 7px;
   border: 1px solid var(--line-2);
-  color: var(--fg-muted);
+  color: #9090a4;
   background: rgba(0, 0, 0, 0.3);
   text-transform: uppercase;
 }

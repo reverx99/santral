@@ -3,15 +3,15 @@
   "version": 1,
   "updated": "2026-05-10",
   "categories": [
-    { "id": "browser",  "label": "TARAYICI",     "color": "#ff0099", "glyph": "◤" },
-    { "id": "media",    "label": "MEDYA",        "color": "#00f0ff", "glyph": "▶" },
-    { "id": "office",   "label": "OFİS",         "color": "#b400ff", "glyph": "▤" },
-    { "id": "dev",      "label": "GELİŞTİRME",   "color": "#ffd400", "glyph": "⚙" },
-    { "id": "graphics", "label": "GRAFİK",       "color": "#ff0099", "glyph": "✎" },
-    { "id": "comm",     "label": "İLETİŞİM",     "color": "#00f0ff", "glyph": "✉" },
-    { "id": "system",   "label": "SİSTEM",       "color": "#b400ff", "glyph": "▮" },
-    { "id": "gaming",   "label": "OYUN",         "color": "#ffd400", "glyph": "✱" },
-    { "id": "utility",  "label": "ARAÇLAR",      "color": "#66ff99", "glyph": "✚" }
+    { "id": "browser",  "label": "Tarayıcı",     "color": "#ff0099", "glyph": "◤" },
+    { "id": "media",    "label": "Medya",        "color": "#00f0ff", "glyph": "▶" },
+    { "id": "office",   "label": "Ofis",         "color": "#b400ff", "glyph": "▤" },
+    { "id": "dev",      "label": "Geliştirme",   "color": "#ffd400", "glyph": "⚙" },
+    { "id": "graphics", "label": "Grafik",       "color": "#ff0099", "glyph": "✎" },
+    { "id": "comm",     "label": "İletişim",     "color": "#00f0ff", "glyph": "✉" },
+    { "id": "system",   "label": "Sistem",       "color": "#b400ff", "glyph": "▮" },
+    { "id": "gaming",   "label": "Oyun",         "color": "#ffd400", "glyph": "✱" },
+    { "id": "utility",  "label": "Araçlar",      "color": "#66ff99", "glyph": "✚" }
   ],
   "apps": [
     {

@@ -45,9 +45,9 @@ export async function renderTarama(host, { invoke }) {
 
     <div class="scan-toolbar">
       <div class="cats" id="scan-cats">
-        ${chip("all", "TÜMÜ", null, true)}
+        ${chip("all", "Tümü", null, true)}
         ${cat.categories.map(c => chip(c.id, c.label, c.color, false)).join("")}
-        ${chip("installed", "YALNIZCA KURULU", "#66ff99", false, "filter")}
+        ${chip("installed", "Yalnızca kurulu", "#66ff99", false, "filter")}
       </div>
     </div>
 
@@ -173,16 +173,20 @@ function scannerCard(s, cat) {
         ? `<button class="btn install-btn" data-scanner-install-kind="${esc(installKind.kind)}" data-scanner-install-pkg="${esc(installKind.pkg)}" data-scanner-install-label="${esc(s.name)} kurulumu">▶ KUR <small>(${esc(installKind.source.toUpperCase())})</small></button>`
         : `<button class="btn install-btn off" disabled title="bu sistemde kurulamıyor">× KAYNAK YOK</button>`);
 
+  const iconLetter = (s.name || "?").trim().charAt(0).toUpperCase();
   return `
     <article class="app-card scan-card fade-in" style="--c:${esc(color)}" data-id="${esc(s.id)}">
       <header class="app-head">
-        <span class="app-cat">${esc(category?.label || s.category.toUpperCase())} · ${esc(s.name.toUpperCase())}</span>
+        <span class="app-cat">${esc(category?.label || s.category)}</span>
         <div class="scan-meta">
           ${s.needs_root ? `<span class="chip" title="root yetkisi gerekir">⌐ ROOT</span>` : ""}
-          <span class="chip ${speedClass}">${esc(s.speed.toUpperCase())}</span>
+          <span class="chip ${speedClass}">${esc(s.speed)}</span>
         </div>
       </header>
-      <h3 class="app-name">${esc(s.name)}</h3>
+      <div class="app-title-row">
+        <div class="app-icon" aria-hidden="true">${esc(iconLetter)}</div>
+        <h3 class="app-name">${esc(s.name)}</h3>
+      </div>
       <p class="app-desc">${esc(s.description)}</p>
       <div class="app-tags">${tags}</div>
       <div class="app-foot">

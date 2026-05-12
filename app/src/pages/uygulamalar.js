@@ -76,7 +76,7 @@ export async function renderUygulamalar(host, { invoke }) {
         </button>
       </div>
       <div class="cats" id="apps-cats">
-        ${categoryChip("all", "TÜMÜ", null, true)}
+        ${categoryChip("all", "Tümü", null, true)}
         ${cat.categories.map(c => categoryChip(c.id, c.label, c.color, false)).join("")}
       </div>
     </div>
@@ -411,6 +411,7 @@ function repoHitCard(h) {
   const color = colorByKind[h.source] || "#00f0ff";
   const title = h.label || h.name;
   const subtitle = h.label ? h.name : "";
+  const iconLetter = (title || "?").trim().charAt(0).toUpperCase();
   const kind = SOURCE_KIND[h.source];
   const noteText = SOURCE_NOTE[h.source] || "";
   const label = `${title} (${SOURCE_LABELS[h.source] || h.source})`;
@@ -429,8 +430,13 @@ function repoHitCard(h) {
         <span class="repo-hit-source">${esc(h.source.toUpperCase())}${h.remote ? " · " + esc(h.remote) : ""}</span>
         ${h.version ? `<span class="repo-hit-ver">${esc(h.version)}</span>` : ""}
       </header>
-      <h5 class="repo-hit-title">${esc(title)}</h5>
-      ${subtitle ? `<div class="repo-hit-id">${esc(subtitle)}</div>` : ""}
+      <div class="repo-hit-title-row">
+        <div class="app-icon repo-hit-icon" aria-hidden="true">${esc(iconLetter)}</div>
+        <div class="repo-hit-title-block">
+          <h5 class="repo-hit-title">${esc(title)}</h5>
+          ${subtitle ? `<div class="repo-hit-id">${esc(subtitle)}</div>` : ""}
+        </div>
+      </div>
       ${h.summary ? `<p class="repo-hit-desc">${esc(h.summary)}</p>` : ""}
       ${btn}
     </article>
@@ -475,6 +481,7 @@ function appCard(app, cat) {
 
   const bulkEnabled = installable.length > 0;
   const checked = _state.selected.has(app.id);
+  const iconLetter = (app.name || "?").trim().charAt(0).toUpperCase();
   return `
     <article class="app-card fade-in${checked ? " is-bulk-selected" : ""}" style="--c:${esc(color)}">
       <header class="app-head">
@@ -484,10 +491,13 @@ function appCard(app, cat) {
                <span class="app-pick-box"></span>
              </label>`
           : `<span class="app-pick app-pick-empty"></span>`}
-        <span class="app-cat">${esc(category?.label || app.category.toUpperCase())}</span>
+        <span class="app-cat">${esc(category?.label || app.category)}</span>
         ${home}
       </header>
-      <h3 class="app-name">${esc(app.name)}</h3>
+      <div class="app-title-row">
+        <div class="app-icon" aria-hidden="true">${esc(iconLetter)}</div>
+        <h3 class="app-name">${esc(app.name)}</h3>
+      </div>
       <p class="app-desc">${esc(app.description)}</p>
       <div class="app-tags">${tags}</div>
       <div class="app-foot">
