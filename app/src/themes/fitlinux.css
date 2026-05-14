@@ -1,0 +1,46 @@
+/* ============================================================
+ * fitlinux — varsayılan tema (F1'de dolacak)
+ * ------------------------------------------------------------
+ * Yön: soft-dark, comfy + chill. Tokyo Night × Catppuccin
+ * yakınlığında ama doğrudan taklit değil. Lavanta aksan.
+ *
+ * F0 itibariyle iskelet. Bileşenler hâlâ cyberphonk üzerinden
+ * render ediliyor; F1'de _contract.css değişkenleri buraya
+ * gerçek değerleriyle yazılacak ve tüm bileşenler değişken-
+ * tabanlı hale getirilecek.
+ * ============================================================ */
+
+html[data-theme="fitlinux"] {
+  /* — F1'de doldurulacak —
+   *
+   * --bg:           #1a1b26;
+   * --surface:      #24283b;
+   * --surface-elev: #2f3349;
+   * --border:       #414868;
+   * --text:         #c0caf5;
+   * --text-muted:   #9aa5ce;
+   * --text-dim:     #565f89;
+   *
+   * --accent:       #b4a5ff;
+   * --accent-on:    #1a1b26;
+   * --accent-soft:  rgba(180,165,255,.14);
+   * --accent-warm:  #ffb380;
+   *
+   * --ok:    #9ece6a;  --ok-soft:    rgba(158,206,106,.14);
+   * --warn:  #e0af68;  --warn-soft:  rgba(224,175,104,.14);
+   * --bad:   #f7768e;  --bad-soft:   rgba(247,118,142,.14);
+   * --info:  #7dcfff;  --info-soft:  rgba(125,207,255,.14);
+   *
+   * --font-body:    "Inter", system-ui, sans-serif;
+   * --font-display: "Space Grotesk", "Inter", sans-serif;
+   * --font-mono:    "JetBrains Mono", ui-monospace, monospace;
+   *
+   * --radius-sm:  6px;
+   * --radius:     8px;
+   * --radius-lg:  12px;
+   * --shadow:      0 1px 2px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.25);
+   * --shadow-elev: 0 12px 32px rgba(0,0,0,.45);
+   * --tr-fast:   120ms ease;
+   * --tr-normal: 220ms cubic-bezier(.2,.7,.2,1);
+   */
+}

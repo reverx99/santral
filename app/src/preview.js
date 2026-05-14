@@ -277,7 +277,7 @@ const MOCK = {
     ],
   }),
   app_info: () => ({
-    name: "Santral",
+    name: "fitlinux",
     version: "0.0.1",
     build: "preview-001",
     repo: "https://github.com/reverx99/santral",
@@ -296,7 +296,7 @@ const MOCK = {
     snap:    { installed: false, version: null },
   }),
   system_info: () => ({
-    hostname: "santral-dev",
+    hostname: "fitlinux-dev",
     kernel: "6.8.0-31-generic",
     os_name: "Linux (Ubuntu 24.04.2 LTS)",
     uptime_secs: 3 * 86400 + 7 * 3600 + 22 * 60,
@@ -354,7 +354,7 @@ const MOCK = {
       target_ms: 4490,
     },
     top_cpu: [
-      { pid: 4421, name: "santral",     cpu_percent: 28.4, memory_bytes: 142 * 1024 ** 2 },
+      { pid: 4421, name: "fitlinux",    cpu_percent: 28.4, memory_bytes: 142 * 1024 ** 2 },
       { pid: 1834, name: "firefox",     cpu_percent: 18.2, memory_bytes: 1240 * 1024 ** 2 },
       { pid: 2911, name: "gnome-shell", cpu_percent: 6.8,  memory_bytes: 410 * 1024 ** 2 },
       { pid: 2056, name: "wireplumber", cpu_percent: 2.3,  memory_bytes: 22 * 1024 ** 2 },
@@ -364,7 +364,7 @@ const MOCK = {
       { pid: 1834, name: "firefox",     cpu_percent: 18.2, memory_bytes: 1240 * 1024 ** 2 },
       { pid: 4310, name: "code",        cpu_percent: 3.6,  memory_bytes: 720 * 1024 ** 2 },
       { pid: 2911, name: "gnome-shell", cpu_percent: 6.8,  memory_bytes: 410 * 1024 ** 2 },
-      { pid: 4421, name: "santral",     cpu_percent: 28.4, memory_bytes: 142 * 1024 ** 2 },
+      { pid: 4421, name: "fitlinux",    cpu_percent: 28.4, memory_bytes: 142 * 1024 ** 2 },
       { pid: 1812, name: "Xwayland",    cpu_percent: 1.1,  memory_bytes: 64 * 1024 ** 2 },
     ],
   }),
@@ -390,10 +390,10 @@ const MOCK = {
     ],
     bluetooth: {
       adapter_present: true,
-      adapter_name: "santral-dev",
+      adapter_name: "fitlinux-dev",
       powered: true,
       service_active: true,
-      raw_status: "Controller AA:BB:CC:DD:EE:FF\n\tName: santral-dev\n\tPowered: yes\n",
+      raw_status: "Controller AA:BB:CC:DD:EE:FF\n\tName: fitlinux-dev\n\tPowered: yes\n",
     },
     usb: [
       { vendor: "1d6b:0003 Linux Foundation 3.0 root hub", product: "", raw: "Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub" },
@@ -634,6 +634,6 @@ window.addEventListener("hashchange", () => {
 });
 
 // dışarıdan playwright ile geçiş yapmak için
-window.__santralGo = navigate;
+window.__fitlinuxGo = navigate;
 
 navigate(location.hash.replace(/^#/, "") || "sistem");

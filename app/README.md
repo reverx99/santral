@@ -1,6 +1,8 @@
-# santral — masaüstü uygulaması
+# fitlinux — masaüstü uygulaması
 
-Tauri 2 (Rust) + Vite (vanilla JS/HTML/CSS). Phonk estetikli, hafif, tek binary.
+Tauri 2 (Rust) + Vite (vanilla JS/HTML/CSS). Hafif, tek binary.
+
+> *Önceki isim: santral. F0'da rebrand edildi; eski phonk tasarımı `src/themes/cyberphonk.css` altında opt-in tema olarak korunuyor.*
 
 **Mevcut durum — tüm bölümler dolu ve aksiyon altyapısı tam çalışır:**
 - ✅ **Sistem** — distro, paket yöneticisi, flatpak/snap, çekirdek, CPU/RAM/swap/disk, systemd servisleri, locale, açılış süresi analizi, top süreçler, **güncelleme tarama + tek-tık yükseltme**
@@ -17,7 +19,7 @@ Tauri 2 (Rust) + Vite (vanilla JS/HTML/CSS). Phonk estetikli, hafif, tek binary.
 - 60+ allowlist'li action kind (apt/dnf/pacman/zypper/flatpak/snap × install/remove/upgrade/clean/autoremove + repo mgmt + scanner runner + journal vacuum)
 - pkexec ile root komutları, polkit cache'i sayesinde oturum başına bir parola
 - Native paket yöneticisi tek-anda-bir-iş kilidi
-- SIGTERM iptal, kalıcı history (~/.local/share/santral/history.jsonl)
+- SIGTERM iptal, kalıcı history (~/.local/share/fitlinux/history.jsonl)
 - Dry-run varsayılan AÇIK — Ayarlar'dan kapatılır
 
 ### Polkit cache (önerilen)
@@ -27,10 +29,10 @@ Pkexec'in varsayılan policy'si `auth_admin_keep` ile parolayı oturum boyu
 parola yeterli olmasını istiyorsan:
 
 ```bash
-sudo install -m 644 packaging/org.santral.Santral.policy /usr/share/polkit-1/actions/
+sudo install -m 644 packaging/org.fitlinux.fitlinux.policy /usr/share/polkit-1/actions/
 ```
 
-Daha uzun cache için `/etc/polkit-1/rules.d/49-santral.rules`'a `AUTH_ADMIN_KEEP`
+Daha uzun cache için `/etc/polkit-1/rules.d/49-fitlinux.rules`'a `AUTH_ADMIN_KEEP`
 ekleyebilirsin (örnek policy dosyasında yorum satırında).
 
 ## Geliştirme ortamı kurulumu
@@ -104,10 +106,9 @@ npm run tauri:build  # release bundle (deb / rpm / appimage)
 - `src/`               — frontend (Vite, vanilla JS)
   - `main.js`          — bootstrap, routing
   - `util.js`          — html escape, byte/duration biçimleyiciler, kart helper'ları
-  - `pages/sistem.js`  — sistem sayfası
-  - `pages/donanim.js` — donanım sayfası
-  - `pages/hakkinda.js`— hakkında sayfası
-  - `styles.css`       — phonk teması
+  - `pages/*.js`       — sayfa-başına bir modül
+  - `themes/`          — `_contract.css`, `fitlinux.css` (varsayılan, F1), `cyberphonk.css` (eski)
+  - `styles.css`       — tema giriş noktası (import wrapper)
 - `src-tauri/`         — Rust backend
   - `src/lib.rs`       — Tauri runtime, `#[tauri::command]` köprüleri
   - `src/distro.rs`    — `/etc/os-release` parser, paket yöneticisi tespiti, flatpak/snap kontrolü

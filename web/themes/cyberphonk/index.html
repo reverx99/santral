@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>SANTRAL // Linux güvenlik &amp; optimizasyon merkezi</title>
+  <meta name="description" content="Santral — Linux için phonk estetikli rootkit avı, sistem optimizasyonu ve uygulama arşivi merkezi." />
+  <meta name="theme-color" content="#050507" />
+  <meta property="og:title" content="SANTRAL" />
+  <meta property="og:description" content="Linux için karanlık çağ güvenlik & optimizasyon merkezi." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%23050507'/><text x='50%25' y='54%25' text-anchor='middle' font-family='monospace' font-size='40' font-weight='900' fill='%23ff0099'>S</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="grid-floor" aria-hidden="true"></div>
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+  <div class="noise" aria-hidden="true"></div>
+
+  <!-- drifting mega text in the background -->
+  <div class="drift drift-a" aria-hidden="true">
+    <span>SANTRAL ✚ サントラル ✚ PHONK ✚ NEON ✚ KONTROL ✚ </span>
+    <span>SANTRAL ✚ サントラル ✚ PHONK ✚ NEON ✚ KONTROL ✚ </span>
+  </div>
+  <div class="drift drift-b" aria-hidden="true">
+    <span>† ROOTKIT † BOOT † SHADOW † KERNEL † GHOST † </span>
+    <span>† ROOTKIT † BOOT † SHADOW † KERNEL † GHOST † </span>
+  </div>
+  <div class="drift drift-c" aria-hidden="true">
+    <span>火 闇 影 力 死 風 雷 鬼 火 闇 影 力 死 風 雷 鬼 </span>
+    <span>火 闇 影 力 死 風 雷 鬼 火 闇 影 力 死 風 雷 鬼 </span>
+  </div>
+
+  <!-- swarm of floating phonk glyphs (filled by JS) -->
+  <div id="swarm" class="swarm" aria-hidden="true"></div>
+
+  <!-- horizontal laser sweep -->
+  <div class="laser" aria-hidden="true"></div>
+
+  <!-- rgb-split glitch flash -->
+  <div id="flash" class="flash" aria-hidden="true"></div>
+
+  <!-- cursor neon orb -->
+  <div id="cursor-orb" class="cursor-orb" aria-hidden="true"></div>
+
+  <header class="nav">
+    <a class="brand" href="#top" aria-label="Santral">
+      <span class="brand-mark">▮</span>
+      <span class="brand-text">SANTRAL</span>
+      <span class="brand-tag">v0.0.1-pre</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#arayuz">arayüz</a>
+      <a href="#ozellikler">özellikler</a>
+      <a href="#distro">distrolar</a>
+      <a href="#yol-haritasi">yol haritası</a>
+      <a href="#manifesto">manifesto</a>
+      <a class="nav-cta" href="https://github.com/reverx99/santral" target="_blank" rel="noopener">github ↗</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-pre">
+        <span class="dot dot-pink"></span>
+        <span class="hero-pre-text">// linux için karanlık çağ kontrol merkezi</span>
+        <span class="dot dot-cyan"></span>
+      </div>
+
+      <h1 class="hero-title" data-text="SANTRAL" aria-label="Santral">
+        <span class="layer l1">SANTRAL</span>
+        <span class="layer l2" aria-hidden="true">SANTRAL</span>
+        <span class="layer l3" aria-hidden="true">SANTRAL</span>
+      </h1>
+
+      <p class="hero-sub">
+        rootkit avı &middot; sistem optimizasyonu &middot; paket cephaneliği &middot; uygulama arşivi
+      </p>
+
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#ozellikler">
+          <span>sistemi tara</span>
+          <span class="btn-arrow">▶</span>
+        </a>
+        <a class="btn btn-ghost" href="#yol-haritasi">
+          <span>yol haritası</span>
+        </a>
+      </div>
+
+      <div class="terminal" role="region" aria-label="Önizleme terminali">
+        <div class="terminal-bar">
+          <span class="t-dot t-r"></span>
+          <span class="t-dot t-y"></span>
+          <span class="t-dot t-g"></span>
+          <span class="terminal-title">root@santral:~#</span>
+        </div>
+<pre class="terminal-body"><code id="typer"></code><span class="caret">▌</span></pre>
+      </div>
+    </section>
+
+    <!-- MARQUEE -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <span>★ ROOTKIT AVI</span><span>★ CLAMAV</span><span>★ CHKROOTKIT</span><span>★ RKHUNTER</span>
+        <span>★ FLATPAK</span><span>★ SNAP</span><span>★ APT · DNF · PACMAN · ZYPPER</span>
+        <span>★ NEON KONTROL</span><span>★ PHONK MOD</span><span>★ SANTRAL</span>
+        <span>★ ROOTKIT AVI</span><span>★ CLAMAV</span><span>★ CHKROOTKIT</span><span>★ RKHUNTER</span>
+        <span>★ FLATPAK</span><span>★ SNAP</span><span>★ APT · DNF · PACMAN · ZYPPER</span>
+        <span>★ NEON KONTROL</span><span>★ PHONK MOD</span><span>★ SANTRAL</span>
+      </div>
+    </div>
+
+    <!-- REEL — phonk edit showcase (scroll-snap) -->
+    <section class="reel" aria-label="Showcase">
+      <div class="reel-frame" data-i="0" style="--c:#ff0099">
+        <div class="reel-aura" aria-hidden="true"></div>
+        <div class="slash-wipe" aria-hidden="true"></div>
+        <div class="reel-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <span class="reel-bang" aria-hidden="true">ドン!</span>
+        <span class="reel-glyph">✚</span>
+        <span class="reel-kicker">KOMUT YOK</span>
+        <h2 class="reel-title">TEK TIKLA</h2>
+        <p class="reel-sub">terminal yok &middot; sudo yok &middot; sadece tıkla.</p>
+        <span class="reel-counter">// 01 / 07</span>
+      </div>
+      <div class="reel-frame" data-i="1" style="--c:#00f0ff">
+        <div class="reel-aura" aria-hidden="true"></div>
+        <div class="slash-wipe" aria-hidden="true"></div>
+        <div class="reel-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <span class="reel-bang" aria-hidden="true">バーン!</span>
+        <span class="reel-glyph">◤</span>
+        <span class="reel-kicker">FLATPAK · SNAP · APT · DNF · PACMAN · ZYPPER</span>
+        <h2 class="reel-title">TÜM PAKETLER</h2>
+        <p class="reel-sub">tek panelde &middot; tek arama kutusu &middot; tek tık.</p>
+        <span class="reel-counter">// 02 / 07</span>
+      </div>
+      <div class="reel-frame" data-i="2" style="--c:#b400ff">
+        <div class="reel-aura" aria-hidden="true"></div>
+        <div class="slash-wipe" aria-hidden="true"></div>
+        <div class="reel-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <span class="reel-bang" aria-hidden="true">ザン!</span>
+        <span class="reel-glyph">†</span>
+        <span class="reel-kicker">CLAMAV · CHKROOTKIT · RKHUNTER</span>
+        <h2 class="reel-title">ROOTKİT AVI</h2>
+        <p class="reel-sub">arka planda. sessizce. rapor masanda.</p>
+        <span class="reel-counter">// 03 / 07</span>
+      </div>
+      <div class="reel-frame" data-i="3" style="--c:#ffd400">
+        <div class="reel-aura" aria-hidden="true"></div>
+        <div class="slash-wipe" aria-hidden="true"></div>
+        <div class="reel-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <span class="reel-bang" aria-hidden="true">ドカーン!</span>
+        <span class="reel-glyph">×</span>
+        <span class="reel-kicker">DEBIAN · UBUNTU · FEDORA · ARCH · OPENSUSE</span>
+        <h2 class="reel-title">DİSTRO FARK ETMEZ</h2>
+        <p class="reel-sub">santral, sistemini tanır. komut çevirisini sana bırakmaz.</p>
+        <span class="reel-counter">// 04 / 07</span>
+      </div>
+      <div class="reel-frame" data-i="4" style="--c:#ff0099">
+        <div class="reel-aura" aria-hidden="true"></div>
+        <div class="slash-wipe" aria-hidden="true"></div>
+        <div class="reel-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <span class="reel-bang" aria-hidden="true">ピカ!</span>
+        <span class="reel-glyph">⚔</span>
+        <span class="reel-kicker">WINDOWS'TAN GELDİN</span>
+        <h2 class="reel-title">EV GİBİ HİSSET</h2>
+        <p class="reel-sub">görev yöneticisi var, mağaza var, savunma var. adı sadece daha havalı.</p>
+        <span class="reel-counter">// 05 / 07</span>
+      </div>
+      <div class="reel-frame" data-i="5" style="--c:#00f0ff">
+        <div class="reel-aura" aria-hidden="true"></div>
+        <div class="slash-wipe" aria-hidden="true"></div>
+        <div class="reel-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <span class="reel-bang" aria-hidden="true">ガン!</span>
+        <span class="reel-glyph">✱</span>
+        <span class="reel-kicker">ÖNBELLEK · BAŞLANGIÇ · LOG · SERVİS</span>
+        <h2 class="reel-title">SİSTEMİ HIZLANDIR</h2>
+        <p class="reel-sub">tek tuş. fark anında. ölçülebilir.</p>
+        <span class="reel-counter">// 06 / 07</span>
+      </div>
+      <div class="reel-frame" data-i="6" style="--c:#ffd400">
+        <div class="reel-aura" aria-hidden="true"></div>
+        <div class="slash-wipe" aria-hidden="true"></div>
+        <div class="reel-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <span class="reel-bang" aria-hidden="true">タダ!</span>
+        <span class="reel-glyph">∞</span>
+        <span class="reel-kicker">AÇIK KAYNAK · REKLAMSIZ · ABONESİZ</span>
+        <h2 class="reel-title">0 LİSANS ÜCRETİ</h2>
+        <p class="reel-sub">ödeme yok. tracking yok. hesap açmak yok. ömür boyu.</p>
+        <span class="reel-counter">// 07 / 07</span>
+      </div>
+    </section>
+
+    <!-- INTERFACE — GUI ↔ CLI ikili showcase -->
+    <section id="arayuz" class="section">
+      <div class="section-head">
+        <span class="section-num">// 01</span>
+        <h2 class="section-title">İSTERSEN TIKLA, İSTERSEN YAZ</h2>
+        <p class="section-lede">santral hem GUI hem CLI. ikisi de aynı çekirdeği konuşur — hangisi senin?</p>
+      </div>
+
+      <div class="dual">
+        <div class="dual-col" style="--c:#ff0099">
+          <div class="dual-tag">▤ GUI</div>
+          <div class="ui-mock" aria-hidden="true">
+            <div class="ui-bar">
+              <span class="ui-dot ud-r"></span>
+              <span class="ui-dot ud-y"></span>
+              <span class="ui-dot ud-g"></span>
+              <span class="ui-bar-title">santral &nbsp;·&nbsp; v0.0.1</span>
+            </div>
+            <div class="ui-body">
+              <aside class="ui-side">
+                <div class="ui-side-item is-active">▮ Tarama</div>
+                <div class="ui-side-item">⚙ Optimizasyon</div>
+                <div class="ui-side-item">⊞ Paketler</div>
+                <div class="ui-side-item">▤ Arşiv</div>
+                <div class="ui-side-item">≡ Repolar</div>
+                <div class="ui-side-item">⚡ Sistem</div>
+              </aside>
+              <main class="ui-main">
+                <div class="ui-stats">
+                  <div class="ui-stat">
+                    <div class="ui-stat-num ok">0</div>
+                    <div class="ui-stat-lab">tehdit</div>
+                  </div>
+                  <div class="ui-stat">
+                    <div class="ui-stat-num">128</div>
+                    <div class="ui-stat-lab">paket güncel</div>
+                  </div>
+                  <div class="ui-stat">
+                    <div class="ui-stat-num warn">2</div>
+                    <div class="ui-stat-lab">uyarı</div>
+                  </div>
+                </div>
+                <div class="ui-pill ok">▣ SİSTEM TEMİZ</div>
+                <div class="ui-progress"><span></span></div>
+                <div class="ui-row">
+                  <button class="ui-btn">DERİN TARAMA</button>
+                  <button class="ui-btn ghost">RAPOR</button>
+                </div>
+              </main>
+            </div>
+          </div>
+          <p class="dual-cap">korkma. sadece tıkla.</p>
+        </div>
+
+        <div class="dual-col" style="--c:#00f0ff">
+          <div class="dual-tag">▮ CLI</div>
+          <div class="cli-mock" aria-hidden="true">
+            <div class="ui-bar">
+              <span class="ui-dot ud-r"></span>
+              <span class="ui-dot ud-y"></span>
+              <span class="ui-dot ud-g"></span>
+              <span class="ui-bar-title">root@santral:~#</span>
+            </div>
+            <pre class="cli-body"><code><span class="dim">$</span> santral scan
+<span class="cyan">[*]</span> clamav imza: <span class="ok">güncel</span>
+<span class="cyan">[*]</span> chkrootkit: <span class="ok">temiz</span>
+<span class="cyan">[*]</span> rkhunter:   <span class="warn">2 uyarı</span>
+
+<span class="dim">$</span> santral pkg --install <span class="pink">firefox</span>
+<span class="pink">[+]</span> kanal: flatpak
+<span class="pink">[+]</span> indiriliyor <span class="dim">[████░░] 67%</span>
+<span class="pink">[+]</span> kuruldu <span class="ok">✓</span>
+
+<span class="dim">$</span> santral optimize --safe
+<span class="cyan">[*]</span> log budama: <span class="ok">412 MB</span>
+<span class="cyan">[*]</span> servis kapama: <span class="ok">3</span>
+<span class="cyan">[*]</span> sistem yeniden hızlı <span class="ok">✓</span>
+
+<span class="dim">$</span> _</code></pre>
+          </div>
+          <p class="dual-cap">power user'sın? komut da var.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="ozellikler" class="section">
+      <div class="section-head">
+        <span class="section-num">// 02</span>
+        <h2 class="section-title">CEPHANELİK</h2>
+        <p class="section-lede">tek merkezden sistemini koru, hızlandır, donat.</p>
+      </div>
+
+      <div class="features">
+        <article class="card" style="--c:#ff0099">
+          <div class="card-num">01</div>
+          <h3>ROOTKIT AVI</h3>
+          <p>ClamAV, chkrootkit ve rkhunter ile katmanlı tarama. Şüpheli imzalar, gizli süreçler, dosya sistemine sızan zararlılar tek panelde.</p>
+          <ul class="card-tags"><li>clamav</li><li>chkrootkit</li><li>rkhunter</li></ul>
+        </article>
+
+        <article class="card" style="--c:#00f0ff">
+          <div class="card-num">02</div>
+          <h3>SİSTEM OPTİMİZASYONU</h3>
+          <p>Önbellek temizliği, gereksiz servisler, başlangıç yöneticisi, log budama. Sistem sürünmesin, koşsun.</p>
+          <ul class="card-tags"><li>cache</li><li>systemd</li><li>journal</li></ul>
+        </article>
+
+        <article class="card" style="--c:#b400ff">
+          <div class="card-num">03</div>
+          <h3>PAKET CEPHANELİĞİ</h3>
+          <p>Flatpak ve Snap kurulu mu? Değilse tek tıkla kur, etkinleştir, yapılandır. Distro fark etmez.</p>
+          <ul class="card-tags"><li>flatpak</li><li>snapd</li><li>flathub</li></ul>
+        </article>
+
+        <article class="card" style="--c:#ff0099">
+          <div class="card-num">04</div>
+          <h3>UYGULAMA ARŞİVİ</h3>
+          <p>Popüler uygulamalardan eğri sürümlere kadar tek tıkla kurulum. Apt, dnf, pacman, zypper, flatpak — hangisi varsa ondan.</p>
+          <ul class="card-tags"><li>tek-tık</li><li>küratörlü</li><li>ofline-imza</li></ul>
+        </article>
+
+        <article class="card" style="--c:#00f0ff">
+          <div class="card-num">05</div>
+          <h3>REPO KONTROL</h3>
+          <p>Distro'na uygun resmi ve üçüncü parti depoları yönet. Açıklı GPG, ölü kaynak, tekrar eden satır — hepsi raporlu.</p>
+          <ul class="card-tags"><li>gpg</li><li>sources.list</li><li>fedora·copr</li></ul>
+        </article>
+
+        <article class="card" style="--c:#b400ff">
+          <div class="card-num">06</div>
+          <h3>TEŞHİS &amp; RAPOR</h3>
+          <p>Donanım, çekirdek, sürücü, sıcaklık, disk sağlığı. Bir komut, tam fotoğraf, paylaşılabilir rapor.</p>
+          <ul class="card-tags"><li>smart</li><li>lscpu</li><li>journalctl</li></ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- DISTROS -->
+    <section id="distro" class="section">
+      <div class="section-head">
+        <span class="section-num">// 03</span>
+        <h2 class="section-title">DESTEKLENEN DİSTROLAR</h2>
+        <p class="section-lede">paket yöneticisi farkı santral'ın umurunda değil.</p>
+      </div>
+
+      <ul class="distros">
+        <li class="distro" style="--c:#ff0099">
+          <span class="distro-glyph">◤</span>
+          <strong>Debian / Ubuntu</strong>
+          <code>apt</code>
+        </li>
+        <li class="distro" style="--c:#00f0ff">
+          <span class="distro-glyph">◢</span>
+          <strong>Fedora / RHEL</strong>
+          <code>dnf</code>
+        </li>
+        <li class="distro" style="--c:#b400ff">
+          <span class="distro-glyph">◣</span>
+          <strong>Arch / Manjaro</strong>
+          <code>pacman</code>
+        </li>
+        <li class="distro" style="--c:#ffd400">
+          <span class="distro-glyph">◥</span>
+          <strong>openSUSE</strong>
+          <code>zypper</code>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ROADMAP -->
+    <section id="yol-haritasi" class="section">
+      <div class="section-head">
+        <span class="section-num">// 04</span>
+        <h2 class="section-title">YOL HARİTASI</h2>
+        <p class="section-lede">santral henüz pre-alpha. inşaat sahası, neon kasksız girilmez.</p>
+      </div>
+
+      <ol class="roadmap">
+        <li class="step done">
+          <span class="step-tag">FAZ 0</span>
+          <h3>tanıtım sitesi</h3>
+          <p>github pages üzerinde phonk estetikli landing — şu an buradasın.</p>
+          <div class="bar"><span style="width:100%"></span></div>
+        </li>
+        <li class="step active">
+          <span class="step-tag">FAZ 1</span>
+          <h3>çekirdek cli</h3>
+          <p><code>santral scan</code>, <code>santral optimize</code>, <code>santral pkg</code> — rust ile minimum komut seti.</p>
+          <div class="bar"><span style="width:18%"></span></div>
+        </li>
+        <li class="step">
+          <span class="step-tag">FAZ 2</span>
+          <h3>tauri arayüz</h3>
+          <p>aynı çekirdek, üzerinde neon panel. canlı tarama, animasyonlu ilerleme, terminal görünümü.</p>
+          <div class="bar"><span style="width:0%"></span></div>
+        </li>
+        <li class="step">
+          <span class="step-tag">FAZ 3</span>
+          <h3>uygulama arşivi</h3>
+          <p>küratörlü uygulama listesi, distro-bilinçli kurulum, imza doğrulama.</p>
+          <div class="bar"><span style="width:0%"></span></div>
+        </li>
+        <li class="step">
+          <span class="step-tag">FAZ 4</span>
+          <h3>tarama motoru genişletmesi</h3>
+          <p>yara kuralları, kullanıcı tanımlı imzalar, planlı tarama, push bildirimi.</p>
+          <div class="bar"><span style="width:0%"></span></div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- MANIFESTO -->
+    <section id="manifesto" class="section">
+      <div class="manifesto">
+        <div class="manifesto-head">
+          <span class="section-num">// 05</span>
+          <h2 class="section-title">MANİFESTO</h2>
+        </div>
+        <div class="manifesto-body">
+          <p>linux gücünü kullanıcısından alır, ama o güç çoğu zaman onlarca komutun altında saklıdır.</p>
+          <p><span class="hl-pink">santral</span> bu komutları toplar, <span class="hl-cyan">karanlık bir merkeze</span> bağlar ve tek panele sığdırır.</p>
+          <p>amaç süslemek değil, kontrol etmek. <span class="hl-purple">phonk estetiği</span> sadece ambalaj — altında çalışan şey ciddi bir güvenlik &amp; optimizasyon araç setidir.</p>
+          <p class="signoff">— santral kollektifi, {{YEAR}}</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">SANTRAL</div>
+        <p class="footer-note">linux için karanlık çağ kontrol merkezi.</p>
+      </div>
+      <div>
+        <h4>bağlantılar</h4>
+        <ul>
+          <li><a href="https://github.com/reverx99/santral" target="_blank" rel="noopener">github</a></li>
+          <li><a href="#yol-haritasi">yol haritası</a></li>
+          <li><a href="#manifesto">manifesto</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>durum</h4>
+        <ul>
+          <li><span class="dot dot-pink"></span> pre-alpha</li>
+          <li><span class="dot dot-cyan"></span> aktif geliştirme</li>
+          <li><span class="dot dot-purple"></span> mit lisansı</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-base">
+      <span>© <span id="year">2026</span> santral</span>
+      <span class="mono">build · pre-alpha · neon</span>
+    </div>
+  </footer>
+
+  <script src="assets/script.js" defer></script>
+</body>
+</html>

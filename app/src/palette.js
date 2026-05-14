@@ -11,7 +11,7 @@ class CommandPalette {
     this.list = null;
     this.activeIdx = 0;
     this.filtered = [];
-    this.recent = JSON.parse(localStorage.getItem("santral.palette.recent") || "[]");
+    this.recent = JSON.parse(localStorage.getItem("fitlinux.palette.recent") || "[]");
     this.bindGlobal();
   }
 
@@ -160,7 +160,7 @@ class CommandPalette {
   execute(item) {
     if (!item) return;
     this.recent = [item.id, ...this.recent.filter((id) => id !== item.id)].slice(0, 8);
-    try { localStorage.setItem("santral.palette.recent", JSON.stringify(this.recent)); } catch {}
+    try { localStorage.setItem("fitlinux.palette.recent", JSON.stringify(this.recent)); } catch {}
     this.close();
     try { item.action(); } catch (err) { console.warn("palette action error", err); }
   }

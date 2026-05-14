@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Santral default capability set",
+  "description": "fitlinux default capability set",
   "windows": ["main"],
   "permissions": [
     "core:default"

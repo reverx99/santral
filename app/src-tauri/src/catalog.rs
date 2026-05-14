@@ -56,7 +56,7 @@ struct RawCatalog {
 
 pub fn collect() -> Catalog {
     let raw: RawCatalog = serde_json::from_str(APPS_JSON)
-        .expect("santral: app/data/apps.json bozuk JSON");
+        .expect("fitlinux: app/data/apps.json bozuk JSON");
 
     let detected = detect_sources();
     let preferred = preferred_native(&detected);

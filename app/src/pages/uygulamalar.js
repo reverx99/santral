@@ -121,7 +121,7 @@ function flatpakHint(cat) {
       <div class="hint-glyph">✚</div>
       <div class="hint-body">
         <strong>Flatpak kurulu değil.</strong>
-        Daha çok uygulamaya tek tık erişim için Flatpak'i etkinleştir — repolar ve kurulum santral tarafından yönetilir.
+        Daha çok uygulamaya tek tık erişim için Flatpak'i etkinleştir — repolar ve kurulum fitlinux tarafından yönetilir.
       </div>
       <button class="btn" disabled title="yakında — sonraki fazda">FLATPAK'İ AÇ</button>
     </div>

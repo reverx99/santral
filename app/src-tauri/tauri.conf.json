@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Santral",
+  "productName": "fitlinux",
   "version": "0.0.1",
-  "identifier": "org.santral.Santral",
+  "identifier": "org.fitlinux.fitlinux",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Santral",
+        "title": "fitlinux",
         "width": 1180,
         "height": 760,
         "minWidth": 920,
@@ -38,6 +38,6 @@
     ],
     "category": "Utility",
     "shortDescription": "Linux için kontrol merkezi",
-    "longDescription": "Santral — Linux için phonk estetikli rootkit avı, sistem optimizasyonu ve uygulama arşivi."
+    "longDescription": "fitlinux — Linux için kullanıcı dostu kontrol merkezi: paket yöneticileri, uygulama arşivi, sürücüler ve sistem bakımı tek pencerede."
   }
 }

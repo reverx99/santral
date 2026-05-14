@@ -1,4 +1,4 @@
-// santral — frontend bootstrap. Tauri komutlarını çağırır, sayfaları render eder.
+// fitlinux — frontend bootstrap. Tauri komutlarını çağırır, sayfaları render eder.
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -184,7 +184,7 @@ const showAppInfo = async () => {
   try {
     const info = await invoke("app_info");
     if (info?.version) $tag.textContent = `v${info.version}`;
-    window.__SANTRAL__ = info;
+    window.__FITLINUX__ = info;
   } catch (err) {
     console.warn("app_info failed", err);
   }

@@ -97,7 +97,7 @@ function paint(host) {
       <div class="setting">
         <div class="setting-head">
           <div class="setting-label">Açılış sayfası</div>
-          <div class="setting-desc">Santral açıldığında doğrudan bu sayfaya geçer.</div>
+          <div class="setting-desc">fitlinux açıldığında doğrudan bu sayfaya geçer.</div>
         </div>
         <div class="setting-control select-row">
           <select class="select" id="startup-route">
@@ -149,7 +149,7 @@ function paint(host) {
       <div class="card-head"><span>YEREL</span></div>
       <h3 class="card-title" style="font-size: 22px;">Telemetri yok</h3>
       <p class="card-sub">
-        Santral hiçbir kullanım istatistiği toplamaz, hiçbir sunucuya bağlanmaz.
+        fitlinux hiçbir kullanım istatistiği toplamaz, hiçbir sunucuya bağlanmaz.
         Tüm tercihler ve veriler yalnızca bu makinede kalır — uygulama açık
         kaynak, kanıtlanabilir.
       </p>

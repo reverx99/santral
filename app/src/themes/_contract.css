@@ -1,0 +1,51 @@
+/* ============================================================
+ * Tema KONTRATI — fitlinux
+ * ------------------------------------------------------------
+ * Bileşenler yalnızca bu CSS değişkenlerini kullanır. Bir tema
+ * dosyası (themes/fitlinux.css, themes/cyberphonk.css, ...)
+ * yalnızca buradaki değerleri override eder; layout/spacing
+ * sabit kalır, sadece görsel kimlik değişir.
+ *
+ * F1'de doldurulacak — şu an placeholder. Hiçbir bileşen henüz
+ * bu değişkenleri okumuyor; cyberphonk teması mevcut kodla
+ * çalışmaya devam ediyor.
+ * ============================================================ */
+
+:root {
+  /* —— Yüzeyler —— */
+  /* --bg            ana arkaplan
+   * --bg-soft       yumuşak arkaplan (panel altları)
+   * --surface       kart yüzeyi
+   * --surface-elev  modal / dropdown / popover
+   * --border        ince ayırıcı
+   * --border-strong belirgin ayırıcı
+   */
+
+  /* —— Metin —— */
+  /* --text          primary metin
+   * --text-muted    secondary metin
+   * --text-dim      tertiary metin (etiketler, time stamps)
+   */
+
+  /* —— Aksan —— */
+  /* --accent        ana aksan (link, CTA, fokus)
+   * --accent-on     accent üstüne yazılan metin rengi
+   * --accent-soft   accent'in solgun tonu (hover bg)
+   * --accent-warm   ikincil aksan (highlight, badge)
+   */
+
+  /* —— Durum —— */
+  /* --ok / --warn / --bad / --info  ve  --*-soft solgun tonları */
+
+  /* —— Tipografi —— */
+  /* --font-body --font-display --font-mono
+   * --fs-1 (en küçük) ... --fs-6 (en büyük)
+   * --lh-tight --lh-normal --lh-loose
+   */
+
+  /* —— Şekil —— */
+  /* --radius-sm  --radius  --radius-lg
+   * --shadow     --shadow-elev
+   * --tr-fast    --tr-normal      (transition süresi)
+   */
+}

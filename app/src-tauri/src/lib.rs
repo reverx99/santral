@@ -1,4 +1,4 @@
-//! Santral — Linux için kontrol merkezi.
+//! fitlinux — Linux için kontrol merkezi.
 //!
 //! Bu crate Tauri uygulamasının çekirdeğini barındırır. Frontend ile köprü
 //! kurulan komutlar burada `#[tauri::command]` olarak işaretlenir.
@@ -30,9 +30,9 @@ pub struct AppInfo {
 #[tauri::command]
 fn app_info() -> AppInfo {
     AppInfo {
-        name: "Santral",
+        name: "fitlinux",
         version: env!("CARGO_PKG_VERSION"),
-        build: option_env!("SANTRAL_BUILD").unwrap_or("dev"),
+        build: option_env!("FITLINUX_BUILD").unwrap_or("dev"),
         repo: "https://github.com/reverx99/santral",
         channel: if cfg!(debug_assertions) { "debug" } else { "release" },
     }
@@ -109,5 +109,5 @@ pub fn run() {
             check_updates,
         ])
         .run(tauri::generate_context!())
-        .expect("santral: tauri runtime failed");
+        .expect("fitlinux: tauri runtime failed");
 }

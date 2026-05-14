@@ -13,9 +13,9 @@ export async function renderHakkinda(host, { invoke }) {
 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px;">
       <article class="card fade-in" style="--c:#ff0099">
-        <div class="card-head"><span>SANTRAL</span></div>
+        <div class="card-head"><span>fitlinux</span></div>
         <h3 class="card-title" style="font-size:48px">${esc(info.name)}</h3>
-        <div class="card-sub">linux için karanlık çağ kontrol merkezi.</div>
+        <div class="card-sub">Linux için kullanıcı dostu kontrol merkezi.</div>
         <div class="card-rows">
           <div class="card-row"><span>sürüm</span><span>v${esc(info.version)}</span></div>
           <div class="card-row"><span>build</span><span>${esc(info.build)}</span></div>
@@ -30,7 +30,7 @@ export async function renderHakkinda(host, { invoke }) {
         <div class="card-rows">
           <div class="card-row"><span>repo</span><span><a href="${esc(info.repo)}" target="_blank" rel="noopener" style="color:var(--cyan); text-decoration:underline;">${esc(info.repo.replace(/^https?:\/\//, ""))}</a></span></div>
           <div class="card-row"><span>lisans</span><span>MIT</span></div>
-          <div class="card-row"><span>kollektif</span><span>santral kollektifi</span></div>
+          <div class="card-row"><span>kollektif</span><span>fitlinux kollektifi</span></div>
         </div>
       </article>
     </div>
@@ -38,10 +38,10 @@ export async function renderHakkinda(host, { invoke }) {
     ${sectionHead("LOG")}
     <article class="card fade-in" style="--c:#b400ff">
       <div class="card-head"><span>UYGULAMA LOG'U</span></div>
-      <div class="card-sub">santral, ham komut çıktılarını ve işlem geçmişini şu konuma yazar:</div>
+      <div class="card-sub">fitlinux, ham komut çıktılarını ve işlem geçmişini şu konuma yazar:</div>
       <div class="card-rows">
-        <div class="card-row"><span>linux (xdg)</span><span>~/.local/share/santral/santral.log</span></div>
-        <div class="card-row"><span>çalışma dizini</span><span>~/.config/santral/</span></div>
+        <div class="card-row"><span>linux (xdg)</span><span>~/.local/share/fitlinux/history.jsonl</span></div>
+        <div class="card-row"><span>çalışma dizini</span><span>~/.config/org.fitlinux.fitlinux/</span></div>
       </div>
       <div class="card-sub" style="margin-top:10px;">
         <em>not: log dosyası şu an yer tutucu — gerçek log akışı paket kurulumu fazıyla birlikte gelecek.</em>

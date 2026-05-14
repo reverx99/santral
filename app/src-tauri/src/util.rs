@@ -2,7 +2,7 @@
 //! kabuğuyla sarmalanmış güvenli Command builder'ı.
 //!
 //! Linux coreutils'in `timeout` komutu yanıt vermeyen bir alt sürecin
-//! Santral'in tamamını kilitlemesini engeller: belirtilen saniye sonra
+//! fitlinux'un tamamını kilitlemesini engeller: belirtilen saniye sonra
 //! SIGTERM, +2 sn sonra SIGKILL gönderir.
 
 use std::process::Command;

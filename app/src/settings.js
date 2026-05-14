@@ -8,7 +8,7 @@
 
 import { toast } from "./toast.js";
 
-const KEY = "santral.settings.v1";
+const KEY = "fitlinux.settings.v1";
 
 const DEFAULTS = {
   accent: "pink",

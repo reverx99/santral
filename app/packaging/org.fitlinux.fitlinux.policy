@@ -3,11 +3,11 @@
  "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
 <!--
-  Santral için polkit policy. Hiçbir yeni eylem TANIMLAMAZ; sadece
-  Santral'in pkexec ile root komut çalıştırma davranışını açıklayan
+  fitlinux için polkit policy. Hiçbir yeni eylem TANIMLAMAZ; sadece
+  fitlinux'in pkexec ile root komut çalıştırma davranışını açıklayan
   bilgi amaçlı bir dosyadır.
 
-  Santral'in çağırdığı tüm root komutlar (apt-get, dnf, pacman, zypper,
+  fitlinux'in çağırdığı tüm root komutlar (apt-get, dnf, pacman, zypper,
   systemctl, journalctl, vb.) zaten kendi paket yöneticilerinin polkit
   policy'lerini kullanır. pkexec için varsayılan
   org.freedesktop.policykit.exec eylemi `auth_admin_keep` ile gelir —
@@ -17,7 +17,7 @@
   Eğer parolanın daha uzun süre cache'lenmesini istersen, sistemine
   bir rule ekleyebilirsin:
 
-    /etc/polkit-1/rules.d/49-santral.rules:
+    /etc/polkit-1/rules.d/49-fitlinux.rules:
     polkit.addRule(function(action, subject) {
       if (action.id == "org.freedesktop.policykit.exec" &&
           subject.isInGroup("wheel"))
@@ -27,6 +27,6 @@
     });
 -->
 <policyconfig>
-  <vendor>Santral kollektifi</vendor>
+  <vendor>fitlinux kollektifi</vendor>
   <vendor_url>https://github.com/reverx99/santral</vendor_url>
 </policyconfig>

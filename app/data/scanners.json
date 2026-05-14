@@ -1,5 +1,5 @@
 {
-  "$schema": "https://santral.org/schemas/scanners-v1.json",
+  "$schema": "https://fitlinux.org/schemas/scanners-v1.json",
   "version": 1,
   "updated": "2026-05-10",
   "categories": [
