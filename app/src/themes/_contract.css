@@ -1,51 +1,22 @@
 /* ============================================================
  * Tema KONTRATI — fitlinux
  * ------------------------------------------------------------
- * Bileşenler yalnızca bu CSS değişkenlerini kullanır. Bir tema
- * dosyası (themes/fitlinux.css, themes/cyberphonk.css, ...)
- * yalnızca buradaki değerleri override eder; layout/spacing
- * sabit kalır, sadece görsel kimlik değişir.
+ * Tüm bileşen kuralları aşağıdaki CSS değişkenlerine başvurur.
+ * Tema dosyaları (themes/fitlinux.css, themes/cyberphonk.css, ...)
+ * yalnızca bu değerleri override eder; layout/spacing sabit kalır.
  *
- * F1'de doldurulacak — şu an placeholder. Hiçbir bileşen henüz
- * bu değişkenleri okumuyor; cyberphonk teması mevcut kodla
- * çalışmaya devam ediyor.
+ * Aktif tema şu attribute ile seçilir:  <html data-theme="fitlinux">
+ *
+ * NOT: cyberphonk.css halen kendi `:root` bloğunda mevcut değişken
+ * adlarını (--bg, --accent, --pink, ...) kullanmaya devam ediyor.
+ * fitlinux teması bunları `[data-theme="fitlinux"]` altında daha
+ * yüksek özgüllükle override eder. F2+'da kontrat semantik isimlerle
+ * (--surface, --text, --ok ...) yeniden basitleştirilecek.
  * ============================================================ */
 
-:root {
-  /* —— Yüzeyler —— */
-  /* --bg            ana arkaplan
-   * --bg-soft       yumuşak arkaplan (panel altları)
-   * --surface       kart yüzeyi
-   * --surface-elev  modal / dropdown / popover
-   * --border        ince ayırıcı
-   * --border-strong belirgin ayırıcı
-   */
-
-  /* —— Metin —— */
-  /* --text          primary metin
-   * --text-muted    secondary metin
-   * --text-dim      tertiary metin (etiketler, time stamps)
-   */
-
-  /* —— Aksan —— */
-  /* --accent        ana aksan (link, CTA, fokus)
-   * --accent-on     accent üstüne yazılan metin rengi
-   * --accent-soft   accent'in solgun tonu (hover bg)
-   * --accent-warm   ikincil aksan (highlight, badge)
-   */
-
-  /* —— Durum —— */
-  /* --ok / --warn / --bad / --info  ve  --*-soft solgun tonları */
-
-  /* —— Tipografi —— */
-  /* --font-body --font-display --font-mono
-   * --fs-1 (en küçük) ... --fs-6 (en büyük)
-   * --lh-tight --lh-normal --lh-loose
-   */
-
-  /* —— Şekil —— */
-  /* --radius-sm  --radius  --radius-lg
-   * --shadow     --shadow-elev
-   * --tr-fast    --tr-normal      (transition süresi)
-   */
-}
+/* Yüzeyler:    --bg, --bg-2, --bg-3, --line, --line-2
+ * Metin:       --fg, --fg-dim, --fg-muted
+ * Aksanlar:    --accent (semantic) → --pink/--cyan/--purple/--yellow/--green/--red (palette)
+ * Tipografi:   --f-display, --f-body, --f-mono, --f-term
+ * Layout:      --sidebar-w, --font-scale
+ */

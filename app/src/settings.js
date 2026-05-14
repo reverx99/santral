@@ -1,23 +1,24 @@
 // Kullanıcı tercihleri — localStorage'da saklanır, sayfada anında uygulanır.
 // Mevcut tercih anahtarları:
+//   theme         — UI teması ("fitlinux" | "cyberphonk" | "light" | "slate")
 //   accent        — vurgu rengi varyantı ("pink" | "cyan" | "purple" | "yellow" | "green")
 //   fontScale     — yazı ölçeği (90 | 100 | 110 | 120)
 //   autoRefresh   — Sistem/Donanım için otomatik yenileme aralığı (sn) — 0 = kapalı
 //   startupRoute  — açılışta gidilecek route id'si
 //   notifications — toast bildirimleri açık mı
+//   dryRun        — aksiyon güvenliği: AÇIK ise komutlar simüle edilir
 
 import { toast } from "./toast.js";
 
 const KEY = "fitlinux.settings.v1";
 
 const DEFAULTS = {
+  theme: "fitlinux",
   accent: "pink",
   fontScale: 100,
   autoRefresh: 0,
   startupRoute: "sistem",
   notifications: true,
-  // Aksiyon güvenliği: varsayılan AÇIK. Komutlar simüle edilir, gerçekten
-  // çalışmaz. Kullanıcı Ayarlar'dan kapatırsa gerçek çalışma başlar.
   dryRun: true,
 };
 
@@ -60,6 +61,7 @@ class Settings {
 
   apply() {
     const root = document.documentElement;
+    root.dataset.theme = this.data.theme || "fitlinux";
     root.dataset.accent = this.data.accent;
     root.style.setProperty("--font-scale", String((this.data.fontScale || 100) / 100));
     toast.setSilent(!this.data.notifications);

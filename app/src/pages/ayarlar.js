@@ -4,12 +4,17 @@ import { pageHead, sectionHead, esc } from "../util.js";
 import { settings } from "../settings.js";
 import { toast } from "../toast.js";
 
+const THEME_OPTIONS = [
+  { id: "fitlinux",   label: "fitlinux",   sub: "soft-dark, comfy + chill (varsayılan)" },
+  { id: "cyberphonk", label: "cyberphonk", sub: "phonk / neon — eski tasarım" },
+];
+
 const ACCENT_OPTIONS = [
-  { id: "pink",   label: "Pembe (varsayılan)", color: "#ff0099" },
-  { id: "cyan",   label: "Cyan",               color: "#00f0ff" },
-  { id: "purple", label: "Mor",                color: "#b400ff" },
-  { id: "yellow", label: "Sarı",               color: "#ffd400" },
-  { id: "green",  label: "Yeşil",              color: "#66ff99" },
+  { id: "pink",   label: "Lavanta",  color: "#b4a5ff" },
+  { id: "cyan",   label: "Gök",      color: "#7dcfff" },
+  { id: "purple", label: "Lila",     color: "#cba6f7" },
+  { id: "yellow", label: "Amber",    color: "#e0af68" },
+  { id: "green",  label: "Sage",     color: "#9ece6a" },
 ];
 
 const FONT_OPTIONS = [
@@ -54,8 +59,23 @@ function paint(host) {
     <div class="settings-grid">
       <div class="setting">
         <div class="setting-head">
+          <div class="setting-label">Tema</div>
+          <div class="setting-desc">Renk paleti ve tipografi tercihi. Anında uygulanır.</div>
+        </div>
+        <div class="setting-control theme-row">
+          ${THEME_OPTIONS.map(o => `
+            <label class="theme-option ${(s.theme || "fitlinux") === o.id ? "is-active" : ""}" data-k="theme" data-v="${esc(o.id)}">
+              <span class="theme-name">${esc(o.label)}</span>
+              <span class="theme-sub">${esc(o.sub)}</span>
+            </label>
+          `).join("")}
+        </div>
+      </div>
+
+      <div class="setting">
+        <div class="setting-head">
           <div class="setting-label">Vurgu rengi</div>
-          <div class="setting-desc">Sayfanın baskın neon tonu.</div>
+          <div class="setting-desc">CTA, link ve aktif menü için ana ton.</div>
         </div>
         <div class="setting-control radio-row">
           ${ACCENT_OPTIONS.map(o => `
@@ -165,6 +185,18 @@ function paint(host) {
 }
 
 function wire(host) {
+  // tema seçici
+  host.querySelectorAll("[data-k='theme']").forEach((el) => {
+    el.addEventListener("click", () => {
+      const v = el.dataset.v;
+      if (settings.get("theme") === v) return;
+      settings.set("theme", v);
+      paint(host);
+      const opt = THEME_OPTIONS.find(o => o.id === v);
+      toast.success("Tema değişti", opt?.label || v);
+    });
+  });
+
   // accent renk swatch'ları
   host.querySelectorAll("[data-k='accent']").forEach((el) => {
     el.addEventListener("click", () => {
